@@ -28,3 +28,6 @@ Thumbs.db
 icons-inbox/*
 !icons-inbox/README.md
 !icons-inbox/.gitkeep
+
+# installed copy of skills/diagram-author (regenerate with `dgm skill install`)
+.claude/skills/diagram-author/
