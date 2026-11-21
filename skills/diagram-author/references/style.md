@@ -24,7 +24,8 @@ job is the *content and structure*.
 - [ ] Reading order marked with `badge`, edge styles explained by `legend` (not a wall of notes)?
 - [ ] Is the main path obvious (animated edges, left-to-right or top-to-bottom)?
 - [ ] Do edge labels say protocol/port/verb, not repeat the node names?
-- [ ] Icons are official for cloud resources and consistent (don't mix `card` and `stacked` styles arbitrarily).
+- [ ] Icons are official for cloud resources and consistent (one of `card`/`stacked` for all Lucide icons — the validator warns on a mix). Icon tile never dominates the label (tile 32 px vs 12.5 px text).
+- [ ] Architecture with zones: nested containers use the tinted-panel look (no dashed borders — dashed means optional/cloud only, on edges).
 - [ ] Dark mode: `render_diagram mode=dark` also looks right?
 - [ ] Phone: `variants.narrow` present, rendered with `variant=narrow`, ≤ 520 px wide (the report says `phone view`), exported as `<name>.<lang>.narrow.svg`?
 
@@ -40,3 +41,9 @@ job is the *content and structure*.
 | Label collides with a line | shorten the label; labels sit on the edge midpoint |
 | Containers too big / empty | fewer sibling containers; drop levels that add no information |
 | Too many colours | remove `tone` except for one or two meanings |
+
+## Re-export every diagram of a page after upgrading dgm
+
+An interactive SVG embeds its own `<style>`. When several are inlined in one page (e.g. `<Diagram>` in MDX) those rules are **global**:
+a diagram exported with an older renderer overrides the look of the newer ones. After changing the renderer, re-render *all* diagrams
+(wide and `--variant narrow`, every language) of the site, not only the one you are editing.

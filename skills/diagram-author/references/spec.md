@@ -30,6 +30,7 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `stackWith` | id of a **sibling leaf**: put this node in the same step, stacked across the flow — below it when `direction: RIGHT`, to its right when `DOWN`. Chains (`c` with `stackWith: b`, `b` with `stackWith: a`) form one column. Edges between stacked nodes are short straight arrows |
 | `badge` | small circle on the node with a sequence marker (`1`, `2`, `A`…) |
 | `variant` | `card` or `stacked` (defaults: `lu-` → card; official/custom → stacked) |
+| `placement` | `below` (top-level node, flow `RIGHT`): drawn in a row **under** the diagram, centred under the node it connects to, instead of a new column to the right. Use it for the optional cloud / external box — keeps the canvas ≤ 3:1 and avoids horizontal scroll. In flow `DOWN` it ends up under the main block, the link running down the right margin |
 | `tone` | `compute data network neutral accent ok warn danger info` — semantic colour from the theme |
 | `children` | makes it a **container**; children are laid out inside it, recursively |
 | `fields` | for `kind: entity`: `[{ name, type, key: pk|fk }]` |
@@ -123,3 +124,50 @@ the member they name, so the main row stays on one line. Prefer stacking the *op
 - A self-loop is rejected.
 - Edges crossing several container levels are routed around headers; keep them few.
 - Text width is estimated: very long labels overflow their node — shorten or use `sublabel`.
+
+
+## Architecture with zones — the compact recipe
+
+```yaml
+type: architecture
+direction: RIGHT
+nodes:
+  - id: pc
+    kind: onprem
+    label: Your computer
+    children:            # zones (containers) hold the nodes; `variant: stacked` = icon tile on top, label below
+      - id: ui
+        kind: group
+        label: WebView
+        children:
+          - { id: web, label: UI, sublabel: Next.js, icon: lu-monitor, variant: stacked, badge: 1 }
+      - id: core
+        kind: group
+        label: Core
+        children:
+          - { id: audio, label: Audio, icon: lu-mic, variant: stacked, badge: 2 }
+          - { id: store, label: Data, icon: lu-database, variant: stacked, badge: 3 }
+  - id: cloud
+    kind: cloud
+    label: Optional cloud
+    placement: below     # under the computer, not a fourth column
+    children:
+      - { id: gw, label: Gateway, icon: lu-cloud, variant: stacked }
+edges:
+  - { from: web, to: audio, label: invoke, flow: true }
+  - { from: audio, to: store, label: segments }
+  - { from: core, to: cloud, label: audio · text, style: dashed }
+variants:
+  narrow:                # phone: bands, one zone per row, same width (`zoneWidth: equal` is implied when there are zones)
+    nodes:
+      web: { variant: card }
+      audio: { variant: card }
+      store: { variant: card }
+      gw: { variant: card }
+```
+
+- Use `zoneWidth: equal` (automatic in `variants.narrow` when the diagram has zones) for tidy bands: zones of one depth share a width,
+  nodes are centred per row, edges are straight verticals where boxes overlap sideways, one elbow otherwise. Plain flows (no zones) keep the
+  automatic layout.
+- Wide target ≈ 2–3 : 1. Zone padding and gaps already come from the layout; remove columns before shrinking text.
+- Phone: **cards** (`variant: card` in `variants.narrow.nodes`) for every node, shorter sublabels, ≤ 520 px.

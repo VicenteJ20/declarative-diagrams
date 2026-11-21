@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateSpec, renderSvg, layoutSpec, registerTheme, resolveTheme } from "./index.js";
+import { validateSpec, renderSvg, layoutSpec, registerTheme, resolveTheme, applyVariant } from "./index.js";
 
 const two = (extra: Record<string, unknown> = {}) =>
   validateSpec({
@@ -18,18 +18,31 @@ const lineEnds = (svg: string) => {
   return { x0: nums[0], y0: nums[1], x1: nums[nums.length - 2], y1: nums[nums.length - 1] };
 };
 
-describe("arrows meet the icon of stacked nodes", () => {
-  it("start/end at the icon edge (5px gap), not at the wider node box", async () => {
+describe("stacked nodes are boxed like cards", () => {
+  it("arrows meet the visible box edge, which is drawn (not transparent)", async () => {
     const spec = two();
     const lay = await layoutSpec(spec);
     const a = lay.nodes.find((n) => n.id === "a")!;
     const b = lay.nodes.find((n) => n.id === "b")!;
     const svg = await renderSvg(spec, { padding: 0 });
     const { x0, x1 } = lineEnds(svg);
-    expect(a.w).toBeGreaterThan(60); // the box is wider than the 40px icon…
-    expect(x0).toBeCloseTo(a.x + a.w / 2 + 20 + 5, 0); // …but the arrow leaves from the icon's right edge
-    expect(x1).toBeCloseTo(b.x + b.w / 2 - 20 - 5, 0); // and arrives at the icon's left edge
-    expect(x1 - x0).toBeGreaterThan(40); // visibly long
+    expect(x0).toBeCloseTo(a.x + a.w, 0);
+    expect(x1).toBeCloseTo(b.x, 0);
+    expect(svg).not.toMatch(/node stacked rect\{fill:transparent/);
+  });
+
+  it("mono icons sit in a tinted tile no bigger than ~2.6x the label size", async () => {
+    const svg = await renderSvg(two(), { padding: 0 });
+    const r = Number(/class="badge[^"]*"[^>]*><circle r="([\d.]+)"/.exec(svg)![1]);
+    expect(r * 2).toBeLessThanOrEqual(12.5 * 2.6);
+    expect(svg).toMatch(/class="badge t-[a-z]+" transform="[^"]+"><circle[^>]*\/><use /);
+  });
+
+  it("warns when Lucide icons mix card and stacked", () => {
+    const r = validateSpec({ nodes: [{ id: "a", label: "A", icon: "lu-database" }, { id: "b", label: "B", icon: "lu-server", variant: "stacked" }] });
+    expect(r.warnings.join(" ")).toMatch(/mixed styles/);
+    expect(two().nodes.length).toBe(2);
+    expect(validateSpec({ nodes: [{ id: "a", label: "A", icon: "lu-database", variant: "stacked" }, { id: "b", label: "B", icon: "lu-server", variant: "stacked" }] }).warnings).toEqual([]);
   });
 
   it("card nodes keep the box edge", async () => {
@@ -228,5 +241,52 @@ describe("default theme from dgm.config.json", () => {
     expect(resolveTheme("brand-cfg").light.accent).toBe("#123456"); // still registered, just not the default
     rmSync(proj, { recursive: true, force: true });
     rmSync(other, { recursive: true, force: true });
+  });
+});
+
+describe("placement: below and zoneWidth: equal", () => {
+  const zones = (extra: Record<string, unknown> = {}) =>
+    validateSpec({
+      direction: "RIGHT",
+      nodes: [
+        { id: "pc", label: "PC", kind: "onprem", children: [{ id: "a", label: "A", icon: "lu-mic" }, { id: "b", label: "B", icon: "lu-database" }] },
+        { id: "cloud", label: "Cloud", kind: "cloud", placement: "below", children: [{ id: "c", label: "C", icon: "lu-cloud" }] },
+      ],
+      edges: [{ from: "a", to: "b" }, { from: "b", to: "c", style: "dashed", label: "text" }],
+      ...extra,
+    }).spec!;
+
+  it("a below node sits under the diagram, centred under the node it connects to (no extra column)", async () => {
+    const lay = await layoutSpec(zones());
+    const cloud = lay.nodes.find((n) => n.id === "cloud")!;
+    const pc = lay.nodes.find((n) => n.id === "pc")!;
+    const b = lay.nodes.find((n) => n.id === "b")!;
+    expect(cloud.y).toBeGreaterThan(pc.y + pc.h);
+    expect(Math.abs(cloud.x + cloud.w / 2 - (b.x + b.w / 2))).toBeLessThan(cloud.w); // under b, not to the right of pc
+    const e = lay.edges.find((x) => x.id === "b->c")!;
+    expect(e.points.length).toBeGreaterThanOrEqual(2);
+    expect(e.points[e.points.length - 1].y).toBeCloseTo(cloud.y, 0); // arrow ends on the cloud zone
+  });
+
+  it("zoneWidth: equal gives sibling zones one width and left-aligned bands (flow DOWN)", async () => {
+    const spec = validateSpec({
+      direction: "DOWN",
+      zoneWidth: "equal",
+      nodes: [
+        { id: "z1", label: "Zone one", kind: "group", children: [{ id: "a", label: "A" }] },
+        { id: "z2", label: "Zone two", kind: "group", children: [{ id: "b", label: "B long label here" }, { id: "c", label: "C", stackWith: "b" }] },
+      ],
+      edges: [{ from: "a", to: "b" }],
+    }).spec!;
+    const lay = await layoutSpec(spec);
+    const z1 = lay.nodes.find((n) => n.id === "z1")!;
+    const z2 = lay.nodes.find((n) => n.id === "z2")!;
+    expect(z1.w).toBe(z2.w);
+    expect(z1.x).toBe(z2.x);
+  });
+
+  it("narrow variant can switch a node to the card style", () => {
+    const spec = validateSpec({ nodes: [{ id: "a", label: "A", icon: "lu-mic", variant: "stacked" }], variants: { narrow: { nodes: { a: { variant: "card" } } } } }).spec!;
+    expect(applyVariant(spec, "narrow")!.nodes[0].variant).toBe("card");
   });
 });

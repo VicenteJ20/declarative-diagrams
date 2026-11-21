@@ -4,13 +4,19 @@
 
 | Prefix | Pack | Default look |
 |---|---|---|
-| `az-` | Official Azure architecture icons (imported locally) | stacked: big icon, label under it, no box |
+| `az-` | Official Azure architecture icons (imported locally) | stacked: boxed vertical card — full-colour icon on top, label under it |
 | `aws-` | Official AWS architecture icons (imported locally): services, categories, **groups** (account, VPC, subnets, region…) and **resources** (`aws-res-…`) | stacked |
 | `lu-` | Lucide (bundled, 2400+ line icons) | card: themeable icon in a circular badge |
 | `<prefix>-` | Project packs from `dgm.config.json` (`{ "icons": [{ "prefix": "my", "dir": "./icons" }] }`) | stacked |
 | other synced packs (e.g. `gcp-`) | any folder under `icons-inbox/<pack>/` imported with `update_icons` | stacked |
 
-Override per node with `variant: card|stacked`. Official icons are never recoloured (brand rules); Lucide/monochrome icons follow the
+Override per node with `variant: card|stacked`.
+
+**Two looks, one visual language.** Both are a white box with the same border, radius and hover/selection:
+- `card` — horizontal: tinted circular badge (22 px) + label to its right. Best for **flows** and dense diagrams.
+- `stacked` — vertical: tinted circular tile (32 px, glyph 20 px ≈ 1.6× the label) with the label centred below. Best for **architecture / on-prem** diagrams with zones, where each box is a component.
+Pick ONE per diagram for Lucide icons (the validator warns when `lu-` icons mix both). Official Azure/AWS icons keep their artwork at 32 px
+inside the same box, so mixing official (stacked) + Lucide (stacked) in an architecture is fine — set `variant: stacked` on the Lucide ones too. Official icons are never recoloured (brand rules); Lucide/monochrome icons follow the
 theme.
 
 ## Finding the right name

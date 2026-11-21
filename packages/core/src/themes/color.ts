@@ -81,3 +81,11 @@ export function contrast(a: string, b: string): number | null {
   const [hi, lo] = la > lb ? [la, lb] : [lb, la];
   return (hi + 0.05) / (lo + 0.05);
 }
+
+/** Mix two hex colours (t = share of `a`, 0..1) in sRGB; falls back to `b` when either is not a hex colour. */
+export function mixHex(a: string, b: string, t: number): string {
+  const pa = parseHex(a);
+  const pb = parseHex(b);
+  if (!pa || !pb) return b;
+  return "#" + pa.map((v, i) => Math.round((v * t + pb[i] * (1 - t)) * 255).toString(16).padStart(2, "0")).join("");
+}

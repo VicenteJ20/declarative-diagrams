@@ -1,3 +1,4 @@
+import { mixHex } from "./themes/color.js";
 import { ResolvedTheme, TOKEN_KEYS, TONES, TokenMap, FONT_STACKS, FontMode } from "./themes/index.js";
 
 export const SERIF = FONT_STACKS.serif;
@@ -38,6 +39,9 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
       `.dgm .tn-${t}.cont rect,.dgm .tn-${t}.node rect,.dgm .tn-${t}.node polygon{fill:${v("tone-" + t)}}`,
   ).join("");
 
+  // nested zones: a faint tint of the panel line over the panel — visible against both the page and the white node cards
+  const zone = lit ? mixHex(lm["panel-stroke"] ?? "#ddd", lm["panel-a"] ?? "#fff", 0.35) : `color-mix(in srgb, ${v("panel-stroke")} 35%, ${v("panel-a")})`;
+
   const vars = lit
     ? ""
     : `.dgm{${decls(theme.light, "--dgm-")}}` +
@@ -56,7 +60,6 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
 .dgm.dim .el:not(.hl):not(.ctx){opacity:.16}
 .dgm.dim .note-g,.dgm.dim .leader{opacity:.5}
 .dgm .node.hl rect,.dgm .node.hl polygon{stroke:${v("accent")};stroke-width:1.8}
-.dgm .node.stacked:hover rect{stroke:${v("panel-stroke")}}
 .dgm .cont.hl rect{stroke:${v("accent")}}
 .dgm .edge.hl .line{stroke:${v("accent")};stroke-width:1.8}
 .dgm .edge.hl marker path{fill:${v("accent")}}
@@ -80,7 +83,7 @@ ${vars}
 .dgm .title{font-family:${fSerif};font-size:15px;font-style:italic}
 .dgm .cont rect{stroke-width:1}
 .dgm .cont.even rect{fill:${v("panel-a")};stroke:${v("panel-stroke")}}
-.dgm .cont.odd rect{fill:${v("panel-b")};stroke:${v("stroke")};stroke-dasharray:4 3}
+.dgm .cont.odd rect{fill:${zone};stroke:${v("panel-stroke")}}
 .dgm .node rect,.dgm .node polygon{fill:${v("node-bg")};stroke:${v("stroke")};stroke-width:1}
 .dgm .node .rowline{stroke:${v("panel-stroke")};stroke-width:1}
 .dgm .node .field{font-size:11.5px}
@@ -88,7 +91,6 @@ ${vars}
 .dgm .node .key{font-size:8.5px;font-weight:700;fill:${v("accent")}}
 .dgm .endl{font-size:10.5px;fill:${v("muted")};font-family:${fSerif};font-style:italic}
 .dgm .ico{color:${v("icon-ink")}}
-.dgm .node.stacked rect{fill:transparent;stroke:transparent}
 .dgm .badge circle{stroke:none}
 .dgm .badge path{fill:none;stroke:${v("icon-ink")};stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
 .dgm .badge text{fill:${v("icon-ink")};font-size:13px;text-anchor:middle;font-family:${fSerif};font-style:italic}

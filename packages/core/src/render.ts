@@ -1,8 +1,8 @@
 import { buildSequence } from "./sequence.js";
 import { DiagramSpec, edgeIds } from "./spec.js";
-import { Layout, LEdge, Pt, layoutSpec, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
+import { Layout, LEdge, Pt, layoutSpec, textW, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
 import { kindOf } from "./kinds.js";
-import { nodeIcon, IconEmitter, diagramNs, STACK_ICON, CARD_ICON, HEAD_ICON } from "./icons/index.js";
+import { nodeIcon, IconEmitter, diagramNs, STACK_ICON, STACK_GLYPH, STACK_PAD, CARD_ICON, HEAD_ICON } from "./icons/index.js";
 import { css } from "./theme.js";
 import { Mode, isMode, getDefaultTheme, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme, FontMode } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
@@ -185,6 +185,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   // ---- containers ----
   let contSvg = "";
   let nodeSvg = "";
+  const hdrCut: string[] = []; // container header text boxes: edges are hidden behind them (so a line never strikes through a title)
   for (const nd of layout.nodes) {
     const k = kindOf(nd.spec.kind);
     const common =
@@ -199,6 +200,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       const hicon = hic ? icons.use(hic.res, nd.x + 10, nd.y + 9, HEAD_ICON) : "";
       const tag = k.tag ? `<text class="tag" x="${n(nd.x + 12 + off)}" y="${n(nd.y + 17)}">${esc(k.tag.toUpperCase())}</text>` : "";
       const ty = k.tag ? nd.y + 34 : nd.y + 25;
+      const tw = Math.max(textW(nd.spec.label, 12.5, true), k.tag ? textW(k.tag.toUpperCase(), 9) : 0);
+      hdrCut.push(`<rect x="${n(nd.x + 12 + off - 4)}" y="${n(nd.y + (k.tag ? 5 : 8))}" width="${n(tw + 8)}" height="${k.tag ? 36 : 22}"/>`);
       contSvg +=
         `<g class="el cont ${parity}${nd.spec.tone ? ` tn-${nd.spec.tone}` : ""}" ${common}>` +
         `<rect x="${n(nd.x)}" y="${n(nd.y)}" width="${n(nd.w)}" height="${n(nd.h)}" rx="8"/>` +
@@ -222,13 +225,18 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
         (nd.spec.sublabel ? `<text class="sub" text-anchor="middle" x="${n(cx)}" y="${n(cy + 12)}">${esc(nd.spec.sublabel)}</text>` : "");
       const ic = nodeIcon(nd.spec);
       if (ic && ic.variant === "stacked") {
-        const iy = nd.y + 8;
+        const iy = nd.y + STACK_PAD;
+        const ty = iy + STACK_ICON + 16;
+        // mono icons sit in a tinted tile (same language as the card badge); official icons keep their artwork
+        const art = ic.res.data.mono
+          ? `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(cx)} ${n(iy + STACK_ICON / 2)})"><circle r="${STACK_ICON / 2}"/>${icons.use(ic.res, -STACK_GLYPH / 2, -STACK_GLYPH / 2, STACK_GLYPH)}</g>`
+          : icons.use(ic.res, cx - STACK_ICON / 2, iy, STACK_ICON);
         nodeSvg +=
           `<g class="el node stacked${tn}" tabindex="0" ${aria} ${common}>` +
-          box(8) +
-          icons.use(ic.res, cx - STACK_ICON / 2, iy, STACK_ICON) +
-          `<text class="head" text-anchor="middle" x="${n(cx)}" y="${n(iy + STACK_ICON + 16)}">${esc(nd.spec.label)}</text>` +
-          (nd.spec.sublabel ? `<text class="sub" text-anchor="middle" x="${n(cx)}" y="${n(iy + STACK_ICON + 30)}">${esc(nd.spec.sublabel)}</text>` : "") +
+          box(6) +
+          art +
+          `<text class="head" text-anchor="middle" x="${n(cx)}" y="${n(ty)}">${esc(nd.spec.label)}</text>` +
+          (nd.spec.sublabel ? `<text class="sub" text-anchor="middle" x="${n(cx)}" y="${n(ty + 14)}">${esc(nd.spec.sublabel)}</text>` : "") +
           `</g>`;
       } else if (k.shape === "diamond") {
         nodeSvg +=
@@ -271,9 +279,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       }
       // step badge (sequence marker) inside the node's group, so it dims/highlights with it
       if (nd.spec.badge != null && String(nd.spec.badge) !== "") {
-        const stk = ic && ic.variant === "stacked";
-        const bx = stk ? cx - STACK_ICON / 2 - 4 : nd.x + 2;
-        const by = stk ? nd.y + 10 : nd.y + 2;
+        const bx = nd.x + 2;
+        const by = nd.y + 2;
         const chunk = nodeSvg.slice(nodeStart);
         nodeSvg =
           nodeSvg.slice(0, nodeStart) +
@@ -283,34 +290,14 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   }
 
   // ---- edges ----
-  // Stacked (icon + label) nodes have a box wider than the icon: end/start arrows at the ICON edge so they visibly connect
-  // (otherwise they stop ~40px short). Only when the segment is horizontal and meets the box within the icon's rows.
-  const stackedNodes = new Map(layout.nodes.filter((q) => !q.container && nodeIcon(q.spec)?.variant === "stacked").map((q) => [q.id, q]));
-  const ARROW_GAP = 5;
-  const trimStacked = (le: LEdge): Pt[] => {
-    const pts = le.points.map((q) => ({ ...q }));
-    const trim = (nd: { x: number; y: number; w: number } | undefined, atStart: boolean) => {
-      if (!nd || pts.length < 2) return;
-      const end = atStart ? pts[0] : pts[pts.length - 1];
-      const nxt = atStart ? pts[1] : pts[pts.length - 2];
-      const cx = nd.x + nd.w / 2;
-      const inIcon = end.y >= nd.y + 8 && end.y <= nd.y + 8 + STACK_ICON;
-      if (Math.abs(end.y - nxt.y) > 0.6 || !inIcon) return;
-      if (Math.abs(end.x - nd.x) < 1.5 && nxt.x < end.x) end.x = Math.max(end.x, cx - STACK_ICON / 2 - ARROW_GAP);
-      else if (Math.abs(end.x - (nd.x + nd.w)) < 1.5 && nxt.x > end.x) end.x = Math.min(end.x, cx + STACK_ICON / 2 + ARROW_GAP);
-    };
-    trim(stackedNodes.get(le.from), true);
-    trim(stackedNodes.get(le.to), false);
-    return pts;
-  };
-
   let edgeSvg = "";
   spec.edges.forEach((es, i) => {
     const le: LEdge | undefined = edgeById.get(ids[i]);
     if (!le || le.points.length < 2) return;
-    const epts = trimStacked(le);
+    const epts = le.points;
     const d = roundedPath(epts);
     const cls = `el edge${es.style === "dashed" ? " dashed" : ""}`;
+    const cutAttr = hdrCut.length ? ' mask="url(#dgm-hdr)"' : ""; // lines go behind container titles; labels stay readable
     const lab = le.label;
     const lx = lab ? lab.x : 0;
     // end labels (e.g. cardinality), nudged off the line near each endpoint
@@ -328,8 +315,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     edgeSvg +=
       `<g class="${cls}" data-id="${esc(le.id)}" data-from="${esc(le.from)}" data-to="${esc(le.to)}"${stepAttr(le.id)}>` +
       `<path class="hit" d="${d}"/>` +
-      `<path class="line" d="${d}" marker-end="url(#dgm-arrow)"${es.both ? ' marker-start="url(#dgm-arrow-r)"' : ""}/>` +
-      (es.flow && !isStatic ? `<path class="pkt" d="${d}"/>` : "") +
+      `<path class="line" d="${d}"${cutAttr} marker-end="url(#dgm-arrow)"${es.both ? ' marker-start="url(#dgm-arrow-r)"' : ""}/>` +
+      (es.flow && !isStatic ? `<path class="pkt" d="${d}"${cutAttr}/>` : "") +
       ends +
       (lab
         ? `<g class="elabel"><rect x="${n(lx)}" y="${n(lab.y)}" width="${n(lab.w)}" height="${n(lab.h)}" rx="3"/>` +
@@ -388,6 +375,9 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     (spec.description ? `<desc>${esc(spec.description)}</desc>` : "") +
     `<defs>` +
     icons.markup() +
+    (hdrCut.length
+      ? `<mask id="dgm-hdr" maskUnits="userSpaceOnUse" x="-20" y="-20" width="${n(layout.width + 60)}" height="${n(layout.height + 60)}"><rect x="-20" y="-20" width="${n(layout.width + 60)}" height="${n(layout.height + 60)}" fill="#fff"/><g fill="#000">${hdrCut.join("")}</g></mask>`
+      : "") +
     `<marker id="dgm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1.5L9 5L0 8.5z"/></marker>` +
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +

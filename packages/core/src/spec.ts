@@ -2,7 +2,7 @@ import { z } from "zod";
 import YAML from "yaml";
 import { KINDS } from "./kinds.js";
 import { TONES, Tone, resolveTheme, ThemeDef, Palette } from "./themes/index.js";
-import { resolveIcon } from "./icons/store.js";
+import { resolveIcon, parseIconRef } from "./icons/store.js";
 
 export interface NodeSpec {
   id: string;
@@ -21,6 +21,12 @@ export interface NodeSpec {
   badge?: string | number;
   /** How an icon is drawn: `card` (badge in a box) or `stacked` (big icon, label below). Default: card for `lu-`, stacked otherwise. */
   variant?: "card" | "stacked";
+  /**
+   * Top-level nodes only, flow RIGHT: draw this node in a row UNDER the diagram, centred below the node it connects to,
+   * instead of as one more column to the right (keeps the diagram compact — ideal for an optional cloud/external box).
+   * Ignored when the flow is DOWN (it already ends below).
+   */
+  placement?: "below";
   sublabel?: string;
   /** Shown in a tooltip on hover. */
   description?: string;
@@ -40,6 +46,7 @@ const NodeSchema: z.ZodType<NodeSpec> = z.lazy(() =>
       stackWith: z.string().optional(),
       badge: z.union([z.string(), z.number()]).optional(),
       variant: z.enum(["card", "stacked"]).optional(),
+      placement: z.literal("below").optional(),
       sublabel: z.string().optional(),
       description: z.string().optional(),
       fields: z
@@ -105,6 +112,8 @@ export const SpecSchema = z
     font: z.enum(["mixed", "sans", "serif"]).optional(),
     /** Token overrides on top of the theme. */
     palette: z.record(z.unknown()).optional(),
+    /** `equal`: containers of the same depth get the same width (tidy bands, best for a vertical/phone layout). */
+    zoneWidth: z.enum(["auto", "equal"]).default("auto"),
     /** Where notes go: a margin gutter (default) or a numbered list under the diagram. */
     notesPosition: z.enum(["side", "below"]).default("side"),
     /**
@@ -123,7 +132,7 @@ export const SpecSchema = z
             nodes: z
               .record(
                 z
-                  .object({ label: z.string().optional(), sublabel: z.string().optional(), stackWith: z.string().nullable().optional() })
+                  .object({ label: z.string().optional(), sublabel: z.string().optional(), stackWith: z.string().nullable().optional(), variant: z.enum(["card", "stacked"]).optional() })
                   .strict(),
               )
               .optional(),
@@ -161,6 +170,8 @@ export interface ValidationResult {
  * Spec for a named variant (`narrow`): its overrides applied. Defaults to a vertical layout with notes below.
  * `nodes` patches label/sublabel/stackWith per id; `hide` removes nodes (and the edges, notes and step entries that touch them).
  */
+const hasContainers = (nodes: NodeSpec[]): boolean => nodes.some((n) => !!n.children?.length);
+
 export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | null {
   const v = spec.variants?.[name];
   if (!v) return null;
@@ -175,6 +186,7 @@ export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | n
         if (p) {
           if (p.label !== undefined) out.label = p.label;
           if (p.sublabel !== undefined) out.sublabel = p.sublabel;
+          if (p.variant !== undefined) out.variant = p.variant;
           if (p.stackWith === null) delete out.stackWith;
           else if (p.stackWith !== undefined) out.stackWith = p.stackWith;
         }
@@ -196,6 +208,8 @@ export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | n
   return {
     ...spec,
     direction: v.direction ?? "DOWN",
+    // bands only make sense with zones (containers); plain flows keep the automatic layout and its edge routing
+    zoneWidth: hasContainers(spec.nodes) ? "equal" : spec.zoneWidth,
     notesPosition: v.notesPosition ?? "below",
     nodes: mapNodes(spec.nodes),
     edges,
@@ -262,6 +276,26 @@ export function validateSpec(input: unknown, vopts: ValidateOptions = {}): Valid
     }
   };
   walk(spec.nodes);
+
+  // Style consistency: Lucide (monochrome) icons should all be drawn the same way — card is the default.
+  const monoVariants = new Map<string, string[]>();
+  const collect = (nodes: NodeSpec[]) => {
+    for (const n of nodes) {
+      if (n.children?.length) collect(n.children);
+      else if (n.icon && parseIconRef(n.icon)?.prefix === "lu") {
+        const v = n.variant ?? "card";
+        monoVariants.set(v, [...(monoVariants.get(v) ?? []), n.id]);
+      }
+    }
+  };
+  collect(spec.nodes);
+  if (monoVariants.size > 1) {
+    const [minor] = [...monoVariants.entries()].sort((a, b) => a[1].length - b[1].length);
+    warnings.push(
+      `icons: Lucide icons are drawn in mixed styles (card + stacked); use one style across the diagram — drop \`variant\` (card is the default) ` +
+        `or set it on every node. Differing: ${minor[1].map((i) => `"${i}"`).join(", ")} (${minor[0]}).`,
+    );
+  }
 
   // stackWith: sibling leaf, no self/cycles
   const checkStacks = (nodes: NodeSpec[], where: string) => {
@@ -338,6 +372,7 @@ export function specJsonSchema(): unknown {
       tone: { enum: [...TONES] },
       icon: { type: "string", description: "az-<name> | aws-<name> | lu-<name> | <custom-prefix>-<name>. Run `dgm icons search <text>` to discover names." },
       variant: { enum: ["card", "stacked"] },
+      placement: { const: "below", description: "top-level node drawn in a row under the diagram (flow RIGHT), centred under the node it connects to" },
       stackWith: { type: "string", description: "id of a sibling leaf: same step, stacked across the flow (below it when direction RIGHT, beside it when DOWN)" },
       badge: { type: ["string", "number"], description: "sequence marker shown on the node, e.g. 1, 2, 3" },
       sublabel: { type: "string" },
@@ -366,6 +401,7 @@ export function specJsonSchema(): unknown {
       description: { type: "string" },
       direction: { enum: ["RIGHT", "DOWN"] },
       notesPosition: { enum: ["side", "below"] },
+      zoneWidth: { enum: ["auto", "equal"], description: "equal = containers of the same depth share one width (tidy bands; the phone variant uses it)" },
       legend: {
         type: "array",
         items: { type: "object", required: ["label"], additionalProperties: false, properties: { label: { type: "string" }, style: { enum: ["solid", "dashed"] } } },
@@ -378,7 +414,7 @@ export function specJsonSchema(): unknown {
           narrow: {
             type: "object",
             additionalProperties: false,
-            description: "Phone version: vertical by default. `hide` drops nodes; `nodes.<id>` overrides label/sublabel/stackWith (null = un-stack).",
+            description: "Phone version: vertical by default. `hide` drops nodes; `nodes.<id>` overrides label/sublabel/variant/stackWith (null = un-stack).",
             properties: {
               direction: { enum: ["RIGHT", "DOWN"] },
               notesPosition: { enum: ["side", "below"] },
@@ -388,7 +424,7 @@ export function specJsonSchema(): unknown {
                 additionalProperties: {
                   type: "object",
                   additionalProperties: false,
-                  properties: { label: { type: "string" }, sublabel: { type: "string" }, stackWith: { type: ["string", "null"] } },
+                  properties: { label: { type: "string" }, sublabel: { type: "string" }, stackWith: { type: ["string", "null"] }, variant: { enum: ["card", "stacked"] } },
                 },
               },
             },
