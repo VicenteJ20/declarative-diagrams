@@ -16,6 +16,7 @@ import {
   checkTheme,
   isMode,
   parseThemeDef,
+  applyVariant,
   type Mode,
   type ThemeDef,
   type DiagramSpec,
@@ -25,6 +26,7 @@ const HELP = `dgm — Distill-style interactive diagrams
 
 Usage:
   dgm render <spec> -o <out.svg|out.png> [--static] [--mode auto|light|dark] [--theme <name|file>] [--scale 2]
+                    [--aspect 16/9|1.5] [--padding 16] [--variant narrow]
   dgm validate <spec>               Print errors/warnings (exit 1 on errors)
   dgm schema                        Print the JSON Schema of the spec
   dgm kinds                         List known node kinds
@@ -46,6 +48,15 @@ function flag(args: string[], name: string): string | undefined {
 }
 
 /** `--theme` is a name, a theme file path, or (legacy) a mode keyword. */
+/** "16/9", "4:3" or a plain number. */
+function parseAspect(v: string | undefined): number | undefined {
+  if (!v) return undefined;
+  const m = /^(\d+(?:\.\d+)?)\s*[/:]\s*(\d+(?:\.\d+)?)$/.exec(v);
+  const r = m ? Number(m[1]) / Number(m[2]) : Number(v);
+  if (!(r > 0)) throw new Error(`--aspect must be like 16/9 or 1.5, got "${v}"`);
+  return r;
+}
+
 function themeArg(v: string | undefined): string | ThemeDef | undefined {
   if (!v) return undefined;
   if (!isMode(v) && /\.(ya?ml|json)$/i.test(v)) return loadThemeFile(resolve(v));
@@ -72,6 +83,7 @@ const SAMPLE: DiagramSpec = {
   type: "architecture",
   title: "Theme preview",
   direction: "RIGHT",
+  notesPosition: "side",
   nodes: [
     { id: "u", label: "Users", kind: "user" },
     {
@@ -193,12 +205,20 @@ async function main() {
         theme = undefined;
       }
       if (mode && !isMode(mode)) throw new Error(`--mode must be auto|light|dark, got "${mode}"`);
+      const aspect = parseAspect(flag(args, "--aspect"));
+      const padding = flag(args, "--padding") ? Number(flag(args, "--padding")) : undefined;
+      let target = spec;
+      if (flag(args, "--variant")) {
+        const v = applyVariant(spec, flag(args, "--variant") as "narrow");
+        if (!v) throw new Error(`spec has no variants.${flag(args, "--variant")}`);
+        target = v;
+      }
       mkdirSync(dirname(out), { recursive: true });
       if (extname(out).toLowerCase() === ".png") {
         const scale = Number(flag(args, "--scale") ?? 2);
-        writeFileSync(out, await renderPng(spec, { theme, mode, scale }));
+        writeFileSync(out, await renderPng(target, { theme, mode, scale, aspect, padding }));
       } else {
-        writeFileSync(out, await renderSvg(spec, { theme, mode, static: args.includes("--static") }));
+        writeFileSync(out, await renderSvg(target, { theme, mode, aspect, padding, static: args.includes("--static") }));
       }
       console.log(`wrote ${out}`);
       break;

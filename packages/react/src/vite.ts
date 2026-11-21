@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import YAML from "yaml";
-import { parseSpecText, validateSpec, renderSvg, loadConfig, parseThemeDef, type Mode, type ThemeDef, type Palette } from "@dgm/core";
+import { parseSpecText, validateSpec, applyVariant, renderSvg, loadConfig, parseThemeDef, type Mode, type ThemeDef, type Palette } from "@dgm/core";
 
 export interface DgmPluginOptions {
   /** Default theme baked into every diagram (name or definition). A spec's own `theme:` is overridden by this. */
@@ -39,14 +39,18 @@ export default function dgm(options: DgmPluginOptions = {}) {
       if (t) return `export default ${JSON.stringify(parseThemeDef(YAML.parse(readFileSync(file, "utf8")), file))};`;
       const res = validateSpec(parseSpecText(readFileSync(file, "utf8")));
       if (!res.ok) throw new Error(`[dgm] ${file}\n  ${res.errors.join("\n  ")}`);
-      const svg = await renderSvg(res.spec!, {
+      const ro = {
         embedRuntime: false,
         static: !!d![2],
         theme: options.theme,
         mode: options.mode,
         palette: options.palette,
-      });
-      return `export default ${JSON.stringify(svg)};`;
+      };
+      const svg = await renderSvg(res.spec!, ro);
+      // Author-defined `variants.narrow` (never applied automatically): `import svg, { narrow } from "./x.diagram.yaml"`
+      const nv = applyVariant(res.spec!, "narrow");
+      const narrow = nv ? await renderSvg(nv, ro) : null;
+      return `export default ${JSON.stringify(svg)};\nexport const narrow = ${JSON.stringify(narrow)};`;
     },
   };
 }

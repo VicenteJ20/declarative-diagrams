@@ -85,3 +85,6 @@ steps:
     show: [web, sql, kv]
   - title: Everything is logged
     show: [web, mon, "web->mon"]
+
+variants:
+  narrow: {}   # vertical layout + notes below; only used when <Diagram narrowSvg=...> opts in

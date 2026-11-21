@@ -1,0 +1,36 @@
+# Aspect ratio and responsive behaviour
+
+A diagram is never re-oriented automatically (a horizontal architecture does not turn vertical by itself). The author decides.
+
+## `<Diagram>` props
+
+| Prop | Meaning |
+|---|---|
+| `fit` | `auto` (default): fill the width but not narrower than `minWidth`, then scroll sideways · `width`: always scale to the width · `scroll`: natural size |
+| `minWidth` | px under which `fit="auto"` scrolls instead of shrinking text (default 640) |
+| `aspectRatio` | `16/9`, `"4/3"`, `1.5`… fixed box; the diagram is centred inside, never distorted |
+| `maxWidth`, `maxHeight` | caps; the diagram scales down to fit |
+| `align` | `left` (default) · `center` · `right` |
+| `expand` | `auto` (default): ⤢ button + full-screen dialog with zoom, shown only when the diagram is drawn < 80 % of its natural size · `true` / `false` |
+| `narrowSvg`, `narrowBelow` | opt-in author-defined layout used under `narrowBelow` px of container width (default 560) |
+
+## Author-defined narrow layout
+
+```yaml
+variants:
+  narrow: {}                 # defaults: direction DOWN, notesPosition below
+  # narrow: { direction: DOWN, notesPosition: below }
+notesPosition: side          # or below
+```
+
+```mdx
+import arch, { narrow } from "./arch.diagram.yaml";
+<Diagram svg={arch} narrowSvg={narrow} />
+```
+
+Without `variants` nothing changes. When the narrow layout is active, `minWidth` is ignored (it was meant for the wide one).
+
+## Static exports
+
+`dgm render in.yaml -o out.png --aspect 16/9 --padding 16` letterboxes the canvas (e.g. social cards);
+`--variant narrow` renders the narrow layout.

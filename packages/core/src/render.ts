@@ -12,6 +12,10 @@ export interface RenderOptions {
   mode?: Mode;
   /** Theme name or definition. Overrides `spec.theme`. Legacy: "auto" | "light" | "dark" is treated as `mode`. */
   theme?: string | ThemeDef | ResolvedTheme;
+  /** Letterbox the canvas to this width/height ratio (content centred, never distorted). E.g. 16/9. */
+  aspect?: number;
+  /** Extra margin around the content, in SVG units. */
+  padding?: number;
   /** Token overrides applied on top of the theme (merged over `spec.palette`). */
   palette?: Palette;
   /** Embed the runtime <script> in the SVG (standalone use). React sets this to false and attaches itself. */
@@ -102,15 +106,14 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   });
   const stepAttr = (id: string) => (stepsOf.has(id) ? ` data-steps="${stepsOf.get(id)!.join(",")}"` : "");
 
-  // ---- notes (right gutter, Distill-style margin annotations) ----
+  // ---- notes: side gutter (Distill-style margin annotations) or a numbered list below the diagram ----
   const NOTE_W = 190;
-  const GUTTER = spec.notes.length ? NOTE_W + 40 : 0;
+  const below = spec.notesPosition === "below";
+  const GUTTER = spec.notes.length && !below ? NOTE_W + 40 : 0;
   const titleH = spec.title ? 34 : 0;
   const stepperH = spec.steps.length ? 40 : 0;
   const ox = 0;
   const oy = titleH;
-  const W = layout.width + GUTTER;
-  const H = layout.height + titleH + stepperH;
 
   const anchorOf = (target: string): Pt | null => {
     const nd = nodeById.get(target);
@@ -124,27 +127,54 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   };
 
   let notesSvg = "";
+  let notesH = 0;
+  const maxChars = below ? Math.max(28, Math.floor((layout.width - 28) / 6.4)) : 30;
   const placed = spec.notes
-    .map((nt) => ({ nt, a: anchorOf(nt.target), lines: wrap(nt.text, 30) }))
+    .map((nt) => ({ nt, a: anchorOf(nt.target), lines: wrap(nt.text, maxChars) }))
     .filter((p) => p.a)
     .sort((p, q) => p.a!.y - q.a!.y);
   let cursor = -Infinity;
   const marker = (x: number, y: number, num: number) =>
     `<g class="mark" transform="translate(${n(x)} ${n(y)})"><circle r="7.5"/><text y="3.5">${num}</text></g>`;
+  const noteText = (x: number, y: number, lines: string[]) =>
+    `<g class="note-g"><text class="note" x="${n(x)}" y="${n(y)}">` +
+    lines.map((l, i) => `<tspan x="${n(x)}" dy="${i === 0 ? 0 : 15}">${esc(l)}</tspan>`).join("") +
+    `</text></g>`;
   // Numbered markers instead of long leader lines: a marker sits on the target, the same number prefixes the note.
+  let listY = layout.height + 22;
   placed.forEach((p, idx) => {
     const num = idx + 1;
     const h = p.lines.length * 15;
-    const y = Math.max(p.a!.y - 6, cursor + 12);
-    cursor = y + h;
-    const nx = layout.width + 36;
     notesSvg += marker(p.a!.x, p.a!.y, num);
-    notesSvg += marker(nx - 2, y + 4, num);
-    notesSvg +=
-      `<g class="note-g"><text class="note" x="${nx + 12}" y="${n(y + 8)}">` +
-      p.lines.map((l, i) => `<tspan x="${nx + 12}" dy="${i === 0 ? 0 : 15}">${esc(l)}</tspan>`).join("") +
-      `</text></g>`;
+    if (below) {
+      notesSvg += marker(8, listY + 4, num) + noteText(22, listY + 8, p.lines);
+      listY += h + 8;
+      notesH = listY - layout.height;
+    } else {
+      const y = Math.max(p.a!.y - 6, cursor + 12);
+      cursor = y + h;
+      const nx = layout.width + 36;
+      notesSvg += marker(nx - 2, y + 4, num) + noteText(nx + 12, y + 8, p.lines);
+    }
   });
+
+  // ---- canvas: content size, optional padding, optional target aspect ratio (letterboxed, content centred) ----
+  const pad = opts.padding ?? 0;
+  let W = layout.width + GUTTER + 2 * pad;
+  let H = layout.height + titleH + stepperH + notesH + 2 * pad;
+  let dx = pad;
+  let dy = pad;
+  if (opts.aspect && opts.aspect > 0) {
+    if (W / H < opts.aspect) {
+      const w2 = Math.ceil(H * opts.aspect);
+      dx += (w2 - W) / 2;
+      W = w2;
+    } else {
+      const h2 = Math.ceil(W / opts.aspect);
+      dy += (h2 - H) / 2;
+      H = h2;
+    }
+  }
 
   // ---- containers ----
   let contSvg = "";
@@ -252,7 +282,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   // ---- stepper ----
   let stepper = "";
   if (spec.steps.length && !isStatic) {
-    const sy = H - stepperH + 8;
+    const sy = layout.height + titleH + notesH + 8;
     stepper =
       `<g class="stepper" transform="translate(0 ${sy})">` +
       `<g class="btn" data-act="prev" tabindex="0"><rect x="0" y="0" width="26" height="24" rx="5"/><text x="13" y="16.5">‹</text></g>` +
@@ -277,9 +307,11 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +
     `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light" })}</style>` +
+    `<g transform="translate(${n(dx)} ${n(dy)})">` +
     title +
     `<g transform="translate(${ox} ${oy})">${contSvg}${edgeSvg}${nodeSvg}${notesSvg}</g>` +
     stepper +
+    `</g>` +
     script +
     `</svg>`;
 

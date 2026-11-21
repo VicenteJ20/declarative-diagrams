@@ -1,4 +1,4 @@
-export { validateSpec, parseSpecText, specJsonSchema, edgeIds, SpecSchema } from "./spec.js";
+export { validateSpec, applyVariant, parseSpecText, specJsonSchema, edgeIds, SpecSchema } from "./spec.js";
 export type { DiagramSpec, NodeSpec, ValidationResult } from "./spec.js";
 export { layoutSpec } from "./layout.js";
 export { renderSvg, renderLayout, resolveRenderTheme } from "./render.js";

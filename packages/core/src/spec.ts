@@ -82,6 +82,18 @@ export const SpecSchema = z
     theme: z.union([z.string(), z.record(z.unknown())]).optional(),
     /** Token overrides on top of the theme. */
     palette: z.record(z.unknown()).optional(),
+    /** Where notes go: a margin gutter (default) or a numbered list under the diagram. */
+    notesPosition: z.enum(["side", "below"]).default("side"),
+    /** Author-defined alternative layouts. Never applied automatically; `<Diagram narrowBelow>` opts in. */
+    variants: z
+      .object({
+        narrow: z
+          .object({ direction: z.enum(["RIGHT", "DOWN"]).optional(), notesPosition: z.enum(["side", "below"]).optional() })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
     nodes: z.array(NodeSchema).min(1),
     edges: z.array(EdgeSchema).default([]),
     notes: z.array(NoteSchema).default([]),
@@ -100,6 +112,13 @@ export interface ValidationResult {
   spec?: DiagramSpec;
   errors: string[];
   warnings: string[];
+}
+
+/** Spec for a named variant (`narrow`): its overrides applied, defaulting to a vertical layout with notes below. */
+export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | null {
+  const v = spec.variants?.[name];
+  if (!v) return null;
+  return { ...spec, direction: v.direction ?? "DOWN", notesPosition: v.notesPosition ?? "below", variants: undefined };
 }
 
 export function parseSpecText(text: string): unknown {
@@ -215,6 +234,18 @@ export function specJsonSchema(): unknown {
       title: { type: "string" },
       description: { type: "string" },
       direction: { enum: ["RIGHT", "DOWN"] },
+      notesPosition: { enum: ["side", "below"] },
+      variants: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          narrow: {
+            type: "object",
+            additionalProperties: false,
+            properties: { direction: { enum: ["RIGHT", "DOWN"] }, notesPosition: { enum: ["side", "below"] } },
+          },
+        },
+      },
       theme: { description: "Theme name (distill, olive, azure, aws, orange, slate, mono, or a project theme) or an inline theme object", oneOf: [{ type: "string" }, { type: "object" }] },
       palette: { type: "object", description: "Token overrides: { accent, light: {…}, dark: {…}, tones: {…} }" },
       nodes: { type: "array", minItems: 1, items: { $ref: "#/definitions/node" } },
