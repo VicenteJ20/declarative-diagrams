@@ -10,13 +10,14 @@ Use the **`diagram-author` skill** and the **`dgm` MCP server** (tools are expos
 `dgm_search_icons`, `dgm_validate_diagram`, `dgm_render_diagram`, `dgm_write_diagram`, `dgm_create_theme`, …).
 Workflow: guide → find icons with `dgm_search_icons` (never guess names) → write the spec → `dgm_validate_diagram` →
 `dgm_render_diagram` (look at the PNG, iterate) → `dgm_write_diagram` / `save_to`.
-Shortcuts: `/diagram <idea>` and `/diagram-theme <brand colours>`.
+In OpenCode, switch to the **`diagram-specialist`** agent (Tab) — it owns this workflow, takes text and reference images — or use the shortcuts
+`/diagram <idea>` and `/diagram-theme <brand colours>` (both run with that agent).
 
 ## Commands
 
 ```
 npm install && npm run build      # build all packages (the MCP server runs from packages/mcp/dist)
-npm test                          # vitest (52 tests; docs YAML blocks are validated too)
+npm test                          # vitest (64 tests; docs YAML blocks are validated too)
 node packages/cli/dist/index.js --help
 npm run demo:dev                  # Astro + MDX demo
 ```

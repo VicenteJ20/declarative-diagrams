@@ -35,6 +35,37 @@ This repo already contains everything OpenCode needs, so opening it with `openco
 | [`AGENTS.md`](../AGENTS.md) | project notes + the diagram workflow, read automatically by OpenCode |
 | [`.opencode/commands/`](../.opencode/commands) | `/diagram <idea>` and `/diagram-theme <brand colours>` |
 
+### The agent: `diagram-specialist`
+
+[`.opencode/agents/diagram-specialist.md`](../.opencode/agents/diagram-specialist.md) is a **primary agent** you talk to directly
+(press **Tab** to switch to it, or run `/diagram` / `/diagram-theme`, which use it). It knows how to run the whole job with the
+Skill and the `dgm_*` tools:
+
+- **Inputs**: a text description, requirements lists, project files (existing `*.diagram.yaml`, Bicep/Terraform/CloudFormation/
+  Kubernetes/docker-compose to derive an architecture) and **images** — previous diagrams, sketches, portal screenshots — pasted into
+  the chat or attached with `@file` (needs a model with vision; the agent says so if it receives no image).
+- **Intake**: it infers what it can and asks at most four short questions, each with its default (type, Azure/AWS and levels,
+  output formats, where to save, theme/mode/font/aspect/narrow variant, icons).
+- **Reference-image protocol**: inventory (containers, nodes, edges, labels, styles) → confirm only the doubtful parts → map to kinds,
+  official icons (`dgm_search_icons`), tones, notes, steps → optional theme from the picture's colours → build → compare against the
+  reference and report differences.
+- **Queries it runs on its own**: `dgm_list_icon_packs` (icon prefixes installed), `dgm_search_icons` for every resource,
+  `dgm_list_kinds`, `dgm_get_spec_schema`, `dgm_get_example`, `dgm_list_themes`, then `dgm_validate_diagram` and `dgm_render_diagram`.
+- **Outputs**: spec file, PNG, interactive or static SVG, MDX snippet, themes — with aspect ratio, mode, font and narrow variant.
+- **Permissions**: all `dgm_*` tools allowed except `dgm_update_icons` (asks); file edits and shell commands ask, except `dgm` CLI calls.
+
+Install it in another project (it also needs the MCP server and the Skill):
+
+```powershell
+node packages/cli/dist/index.js agent install                    # .opencode/agents/  (--global: ~/.config/opencode/agents)
+node packages/cli/dist/index.js skill install --target opencode
+node packages/cli/dist/index.js mcp config --client opencode     # add the block to opencode.json
+```
+
+Example prompts: *"Dibuja la arquitectura de este repo (mira infra/main.bicep), tema olive, y exporta PNG y SVG"* · *"Rehaz este diagrama
+@docs/old-arch.png con los iconos oficiales de AWS y una variante para móvil"* · *"Crea un tema con los colores de mi marca (#5f6f1f y
+#c98a1b) y aplícalo al diagrama anterior"*.
+
 Verified with OpenCode 1.17.9: `opencode mcp list` → `✓ dgm connected`; `opencode debug skill` lists `diagram-author`
 (from `skills/`, no copy). Tools appear to the model as `dgm_<tool>` (e.g. `dgm_render_diagram`). Restart OpenCode after
 changing config or the Skill — it is loaded once at startup.

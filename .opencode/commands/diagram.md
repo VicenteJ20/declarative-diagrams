@@ -1,4 +1,5 @@
 ---
+agent: diagram-specialist
 description: Create or update a diagram from an idea (validates, previews, saves)
 ---
 Use the `diagram-author` skill and the `dgm` MCP tools to make this diagram:

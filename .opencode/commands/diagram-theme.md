@@ -1,4 +1,5 @@
 ---
+agent: diagram-specialist
 description: Create and preview a diagram colour theme from brand colours
 ---
 Create a diagram theme for: $ARGUMENTS

@@ -57,6 +57,7 @@ Usage:
   dgm skill install [--global] [--target claude|opencode]
                                     Install the "diagram-author" Skill: .claude/skills/ (default) or .opencode/skills/
                                     (--global: ~/.claude/skills or ~/.config/opencode/skills)
+  dgm agent install [--global]      Install the "diagram-specialist" OpenCode agent (.opencode/agents/ or ~/.config/opencode/agents/)
   dgm mcp config [--client claude|opencode]
                                     Print the MCP server config (Claude Code/Desktop .mcp.json, or OpenCode opencode.json)
 
@@ -321,6 +322,22 @@ async function main() {
       cpSync(src, dest, { recursive: true, force: true });
       console.log(`Installed the diagram-author Skill to ${dest}`);
       console.log(`Restart ${target === "opencode" ? "OpenCode" : "Claude Code"} (or start a new session) to load it. The MCP server gives it the tools: dgm mcp config --client ${target}`);
+      break;
+    }
+    case "agent": {
+      if (args[0] !== "install") throw new Error("usage: dgm agent install [--global]");
+      const src = [process.env.DGM_AGENT_FILE, resolve(here, "../../../.opencode/agents/diagram-specialist.md")].find((f) => f && existsSync(f));
+      if (!src) throw new Error("Agent file not found (expected .opencode/agents/diagram-specialist.md next to the packages).");
+      const dest = args.includes("--global")
+        ? join(homedir(), ".config", "opencode", "agents", "diagram-specialist.md")
+        : resolve(loadConfig().root, ".opencode", "agents", "diagram-specialist.md");
+      mkdirSync(dirname(dest), { recursive: true });
+      cpSync(src, dest, { force: true });
+      console.log(`Installed the diagram-specialist agent to ${dest}`);
+      console.log("It needs the MCP server and the Skill too:");
+      console.log("  dgm mcp config --client opencode   (add the block to opencode.json)");
+      console.log("  dgm skill install --target opencode");
+      console.log("Restart OpenCode, then press Tab to switch to the agent (or run /diagram).");
       break;
     }
     case "mcp": {

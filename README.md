@@ -3,7 +3,7 @@
 Declarative, **interactive** diagrams in the style of [Distill.pub](https://distill.pub): cloud architecture (Azure / AWS with
 tenants, subscriptions, accounts, resource groups, VNets/VPCs, subnets, resources and their interactions), flowcharts and ER
 models. Write YAML → export an **interactive SVG** (hover/click highlighting, animated flow, steps, tooltips) or a **static PNG**,
-or drop it into **MDX** with `<Diagram />`. An **MCP server + Skill** let an AI agent write, check and look at diagrams.
+or drop it into **MDX** with `<Diagram />`. An **MCP server + Skill** (and an OpenCode **`diagram-specialist` agent**) let an AI write, check and look at diagrams.
 
 ```yaml
 type: architecture

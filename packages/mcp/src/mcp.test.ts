@@ -177,3 +177,37 @@ describe("Skill documentation stays valid", () => {
     expect(themes).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("OpenCode agent stays consistent with the tools", () => {
+  const file = join(repo, ".opencode", "agents", "diagram-specialist.md");
+  const md = readFileSync(file, "utf8");
+
+  it("has valid front matter (description, primary mode, dgm permissions)", () => {
+    const m = /^---\n([\s\S]*?)\n---\n/.exec(md)!;
+    const fm = parseSpecText(m[1]) as any;
+    expect(fm.description.length).toBeGreaterThan(80);
+    expect(fm.mode).toBe("primary");
+    expect(fm.permission["dgm_*"]).toBe("allow");
+    expect(fm.permission["dgm_update_icons"]).toBe("ask");
+  });
+
+  it("only mentions dgm_<tool> names that exist, and covers every tool", async () => {
+    const real = new Set((await client.listTools()).tools.map((t) => t.name));
+    const mentioned = new Set([...md.matchAll(/\bdgm_([a-z]+(?:_[a-z]+)*)/g)].map((x) => x[1]));
+    for (const n of mentioned) expect(real.has(n), `dgm_${n} is not a tool`).toBe(true);
+    for (const n of real) expect(mentioned.has(n), `tool ${n} is not mentioned in the agent`).toBe(true);
+  });
+
+  it("its YAML example is a valid diagram", () => {
+    loadConfig(repo);
+    const blocks = [...md.matchAll(/```yaml\n([\s\S]*?)```/g)].map((m) => m[1]).filter((b) => /^nodes:/m.test(b));
+    expect(blocks.length).toBeGreaterThanOrEqual(1);
+    for (const b of blocks) expect(validateSpec(parseSpecText(b), { missingIcons: "warn" }).errors).toEqual([]);
+  });
+
+  it("commands run with the agent", () => {
+    for (const c of ["diagram", "diagram-theme"]) {
+      expect(readFileSync(join(repo, ".opencode", "commands", `${c}.md`), "utf8")).toMatch(/^---\nagent: diagram-specialist\n/);
+    }
+  });
+});
