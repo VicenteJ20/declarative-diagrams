@@ -10,3 +10,6 @@ export { loadConfig, loadThemeFile } from "./config.js";
 export type { ProjectConfig, LoadedConfig } from "./config.js";
 export * from "./themes/index.js";
 export { parseThemeDef, ThemeDefSchema } from "./themes/schema.js";
+export { resolveIcon, parseIconRef, configureIcons, listIcons, listAliases, syncPack, OFFICIAL_URL } from "./icons/index.js";
+export type { IconResult, CustomPack, OfficialPack } from "./icons/index.js";
+export type { ValidateOptions } from "./spec.js";

@@ -5,14 +5,27 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./runtime": { "types": "./dist/runtime.d.ts", "import": "./dist/runtime.js" },
-    "./themes": { "types": "./dist/themes.d.ts", "import": "./dist/themes.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./themes": {
+      "types": "./dist/themes.d.ts",
+      "import": "./dist/themes.js"
+    }
   },
-  "scripts": { "build": "tsup src/index.ts src/runtime.ts src/themes.ts --format esm --dts --clean" },
+  "scripts": {
+    "build": "tsup src/index.ts src/runtime.ts src/themes.ts --format esm --dts --clean"
+  },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "elkjs": "^0.9.3",
+    "fflate": "^0.8.3",
+    "lucide": "^1.77.0",
     "yaml": "^2.6.0",
     "zod": "^3.23.8"
   }

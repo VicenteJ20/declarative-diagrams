@@ -1,0 +1,19 @@
+# Works out of the box: Lucide icons (lu-) are bundled.
+type: architecture
+title: Lucide icons in cards
+nodes:
+  - { id: u, label: Users, icon: lu-users }
+  - id: app
+    label: Backend
+    kind: cloud
+    icon: lu-cloud
+    children:
+      - { id: api, label: API, icon: lu-server }
+      - { id: db, label: Postgres, icon: lu-database, tone: data }
+      - { id: q, label: Jobs, icon: lu-list-checks, tone: warn }
+      - { id: lock, label: Secrets, icon: lu-key-round }
+edges:
+  - { from: u, to: api, flow: true, label: HTTPS }
+  - { from: api, to: db }
+  - { from: api, to: q, style: dashed }
+  - { from: api, to: lock, style: dashed }

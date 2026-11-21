@@ -1,6 +1,7 @@
 import { DiagramSpec, edgeIds } from "./spec.js";
 import { Layout, LEdge, Pt, layoutSpec, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
 import { kindOf } from "./kinds.js";
+import { nodeIcon, IconEmitter, diagramNs, STACK_ICON, CARD_ICON, HEAD_ICON } from "./icons/index.js";
 import { css } from "./theme.js";
 import { Mode, isMode, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
@@ -90,6 +91,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const isStatic = !!opts.static;
   const { theme, mode } = resolveRenderTheme(spec, opts);
   const ids = edgeIds(spec);
+  const icons = new IconEmitter(diagramNs(JSON.stringify(layout.nodes.map((q) => [q.id, q.spec.icon, q.spec.label]))));
   const nodeById = new Map(layout.nodes.map((nd) => [nd.id, nd]));
   const edgeById = new Map(layout.edges.map((e) => [e.id, e]));
 
@@ -188,13 +190,17 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       stepAttr(nd.id);
     if (nd.container) {
       const parity = nd.depth % 2 === 0 ? "even" : "odd";
-      const tag = k.tag ? `<text class="tag" x="${n(nd.x + 12)}" y="${n(nd.y + 17)}">${esc(k.tag.toUpperCase())}</text>` : "";
+      const hic = nodeIcon(nd.spec);
+      const off = hic ? HEAD_ICON + 8 : 0;
+      const hicon = hic ? icons.use(hic.res, nd.x + 10, nd.y + 9, HEAD_ICON) : "";
+      const tag = k.tag ? `<text class="tag" x="${n(nd.x + 12 + off)}" y="${n(nd.y + 17)}">${esc(k.tag.toUpperCase())}</text>` : "";
       const ty = k.tag ? nd.y + 34 : nd.y + 25;
       contSvg +=
         `<g class="el cont ${parity}${nd.spec.tone ? ` tn-${nd.spec.tone}` : ""}" ${common}>` +
         `<rect x="${n(nd.x)}" y="${n(nd.y)}" width="${n(nd.w)}" height="${n(nd.h)}" rx="8"/>` +
+        hicon +
         tag +
-        `<text class="head" x="${n(nd.x + 12)}" y="${n(ty)}">${esc(nd.spec.label)}</text>` +
+        `<text class="head" x="${n(nd.x + 12 + off)}" y="${n(ty)}">${esc(nd.spec.label)}</text>` +
         `</g>`;
     } else {
       const cy = nd.y + nd.h / 2;
@@ -207,7 +213,17 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       const centered = () =>
         `<text class="head" text-anchor="middle" x="${n(cx)}" y="${n(nd.spec.sublabel ? cy - 3 : cy + 4.5)}">${esc(nd.spec.label)}</text>` +
         (nd.spec.sublabel ? `<text class="sub" text-anchor="middle" x="${n(cx)}" y="${n(cy + 12)}">${esc(nd.spec.sublabel)}</text>` : "");
-      if (k.shape === "diamond") {
+      const ic = nodeIcon(nd.spec);
+      if (ic && ic.variant === "stacked") {
+        const iy = nd.y + 8;
+        nodeSvg +=
+          `<g class="el node stacked${tn}" tabindex="0" ${common}>` +
+          box(8) +
+          icons.use(ic.res, cx - STACK_ICON / 2, iy, STACK_ICON) +
+          `<text class="head" text-anchor="middle" x="${n(cx)}" y="${n(iy + STACK_ICON + 16)}">${esc(nd.spec.label)}</text>` +
+          (nd.spec.sublabel ? `<text class="sub" text-anchor="middle" x="${n(cx)}" y="${n(iy + STACK_ICON + 30)}">${esc(nd.spec.sublabel)}</text>` : "") +
+          `</g>`;
+      } else if (k.shape === "diamond") {
         nodeSvg +=
           open +
           `<polygon points="${n(cx)},${n(nd.y)} ${n(nd.x + nd.w)},${n(cy)} ${n(cx)},${n(nd.y + nd.h)} ${n(nd.x)},${n(cy)}"/>` +
@@ -237,7 +253,11 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
         nodeSvg +=
           open +
           box(6) +
-          `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(nd.x + 20)} ${n(cy)})"><circle r="11"/>${glyphSvg(nd.spec.kind)}</g>` +
+          (ic?.res.data.mono
+            ? `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(nd.x + 20)} ${n(cy)})"><circle r="11"/>${icons.use(ic.res, -7, -7, 14)}</g>`
+            : ic
+              ? icons.use(ic.res, nd.x + 9, cy - CARD_ICON / 2, CARD_ICON)
+              : `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(nd.x + 20)} ${n(cy)})"><circle r="11"/>${glyphSvg(nd.spec.kind)}</g>`) +
           `<text class="head" x="${n(nd.x + 38)}" y="${n(nd.spec.sublabel ? cy - 3 : cy + 4.5)}">${esc(nd.spec.label)}</text>` +
           (nd.spec.sublabel ? `<text class="sub" x="${n(nd.x + 38)}" y="${n(cy + 12)}">${esc(nd.spec.sublabel)}</text>` : "") +
           `</g>`;
@@ -299,10 +319,11 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     !isStatic && opts.embedRuntime !== false ? `<script><![CDATA[${RUNTIME_SOURCE}]]></script>` : "";
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" class="dgm" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"${themeAttr}${dataSteps}>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="dgm" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"${themeAttr}${dataSteps}>` +
     `<title>${esc(spec.title ?? "Diagram")}</title>` +
     (spec.description ? `<desc>${esc(spec.description)}</desc>` : "") +
     `<defs>` +
+    icons.markup() +
     `<marker id="dgm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1.5L9 5L0 8.5z"/></marker>` +
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +

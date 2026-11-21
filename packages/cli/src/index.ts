@@ -17,6 +17,12 @@ import {
   isMode,
   parseThemeDef,
   applyVariant,
+  syncPack,
+  listIcons,
+  listAliases,
+  resolveIcon,
+  OFFICIAL_URL,
+  type OfficialPack,
   type Mode,
   type ThemeDef,
   type DiagramSpec,
@@ -31,6 +37,11 @@ Usage:
   dgm schema                        Print the JSON Schema of the spec
   dgm kinds                         List known node kinds
 
+  dgm icons sync <azure|aws> --from <zip|folder|url> [--dest .dgm/icons]
+                                    Import the official icon package (local only, never committed)
+  dgm icons search <text> [--pack az|aws|lu|<prefix>]   Find icon names
+  dgm icons list [--pack …] | packs | aliases <azure|aws>
+
   dgm theme list                    Built-in and project themes
   dgm theme show <name|file>        Resolved tokens (light + dark) as YAML
   dgm theme new <name> --accent "#6b7a2f" [--flow "#c98a1b"] [--neutral "#f1f0e4"] [--extends distill]
@@ -39,6 +50,8 @@ Usage:
   dgm theme preview <name|file> [-o out-dir]   Render a sample diagram, light and dark, to PNG
 
 <spec> is a .yaml/.yml/.json file. SVG output is interactive unless --static; PNG is always static.
+Icons: set "icon: az-webapp | aws-lambda | lu-database | <prefix>-<name>" on any node. Official Azure/AWS
+packs must be synced first (see "dgm icons sync"); --allow-missing-icons renders a fallback glyph instead of failing.
 Themes: built-ins (distill, olive, azure, aws, orange, slate, mono) plus the ones listed under
 "themes" in dgm.config.json. --theme dark|light|auto is still accepted and means --mode.`;
 
@@ -63,9 +76,9 @@ function themeArg(v: string | undefined): string | ThemeDef | undefined {
   return v;
 }
 
-function load(path: string): DiagramSpec {
+function load(path: string, allowMissingIcons = false): DiagramSpec {
   loadConfig(dirname(resolve(path)));
-  const res = validateSpec(parseSpecText(readFileSync(path, "utf8")));
+  const res = validateSpec(parseSpecText(readFileSync(path, "utf8")), { missingIcons: allowMissingIcons ? "warn" : "error" });
   for (const w of res.warnings) console.error(`warning: ${w}`);
   if (!res.ok) {
     for (const e of res.errors) console.error(`error: ${e}`);
@@ -114,6 +127,59 @@ const SAMPLE: DiagramSpec = {
   notes: [{ target: "db", text: "Sample note in the serif face." }],
   steps: [],
 };
+
+async function iconsCmd(args: string[]) {
+  const [sub, ...rest] = args;
+  loadConfig();
+  switch (sub) {
+    case "sync": {
+      const pack = rest[0] as OfficialPack;
+      if (pack !== "azure" && pack !== "aws") throw new Error("usage: dgm icons sync <azure|aws> --from <zip|folder|url>");
+      const from = flag(rest, "--from");
+      if (!from)
+        throw new Error(`missing --from. Download the official package from ${OFFICIAL_URL[pack]} and pass the .zip (or the extracted folder).`);
+      const r = await syncPack(pack, from, flag(rest, "--dest") ?? ".dgm/icons");
+      console.log(`synced ${r.count} ${pack} icons to ${r.dir} (${r.skipped} non-service files skipped)`);
+      console.log("These files stay on this machine (.dgm/ is git-ignored). Use them as az-<name> / aws-<name>.");
+      break;
+    }
+    case "search": {
+      const q = rest.find((a) => !a.startsWith("--") && a !== flag(rest, "--pack"))?.toLowerCase();
+      if (!q) throw new Error("usage: dgm icons search <text> [--pack az|aws|lu|<prefix>]");
+      const hits = listIcons(flag(rest, "--pack")).filter((i) => i.ref.includes(q));
+      for (const h of hits.slice(0, 60)) console.log(h.ref);
+      if (hits.length > 60) console.log(`… ${hits.length - 60} more`);
+      if (!hits.length) {
+        console.log(`no icon matches "${q}".`);
+        for (const pk of ["azure", "aws"] as OfficialPack[]) {
+          const r = resolveIcon(pk === "azure" ? "az-x" : "aws-x");
+          if (!r.ok && /not installed/.test(r.error)) console.log(`  (${pk} icons not synced — run: dgm icons sync ${pk} --from <zip|folder>)`);
+        }
+      }
+      break;
+    }
+    case "list": {
+      for (const i of listIcons(flag(rest, "--pack"))) console.log(i.ref);
+      break;
+    }
+    case "packs": {
+      for (const [pre, pk] of [["az", "azure"], ["aws", "aws"]] as const) {
+        const r = resolveIcon(`${pre}-x`);
+        const n = listIcons(pre).length;
+        console.log(`${pre.padEnd(4)} ${pk.padEnd(7)} ${n ? `${n} icons` : "not synced"}`);
+        void r;
+      }
+      console.log(`lu   lucide  ${listIcons("lu").length} icons (bundled)`);
+      break;
+    }
+    case "aliases":
+      for (const a of listAliases((rest[0] ?? "azure") as OfficialPack)) console.log(a);
+      break;
+    default:
+      console.log(HELP);
+      process.exit(1);
+  }
+}
 
 async function themeCmd(args: string[]) {
   const [sub, ...rest] = args;
@@ -181,7 +247,7 @@ async function main() {
   const [cmd, ...args] = process.argv.slice(2);
   switch (cmd) {
     case "validate": {
-      load(args[0]);
+      load(args[0], args.includes("--allow-missing-icons"));
       console.log("ok");
       break;
     }
@@ -194,8 +260,11 @@ async function main() {
     case "theme":
       await themeCmd(args);
       break;
+    case "icons":
+      await iconsCmd(args);
+      break;
     case "render": {
-      const spec = load(args[0]);
+      const spec = load(args[0], args.includes("--allow-missing-icons"));
       const out = flag(args, "-o") ?? flag(args, "--out");
       if (!out) throw new Error("missing -o <output>");
       let theme = themeArg(flag(args, "--theme"));

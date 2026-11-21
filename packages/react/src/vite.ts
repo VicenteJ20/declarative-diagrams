@@ -10,6 +10,11 @@ export interface DgmPluginOptions {
   mode?: Mode;
   /** Token overrides baked into every diagram. */
   palette?: Palette;
+  /**
+   * Icons that cannot be resolved (typically: official Azure/AWS packs are not synced on the CI machine).
+   * `error` (default) fails the build; `glyph` falls back to the node kind's built-in glyph with a warning.
+   */
+  missingIcons?: "error" | "glyph";
 }
 
 /**
@@ -37,7 +42,8 @@ export default function dgm(options: DgmPluginOptions = {}) {
       loadConfig(dirname(file) || root);
       (this as any).addWatchFile?.(file);
       if (t) return `export default ${JSON.stringify(parseThemeDef(YAML.parse(readFileSync(file, "utf8")), file))};`;
-      const res = validateSpec(parseSpecText(readFileSync(file, "utf8")));
+      const res = validateSpec(parseSpecText(readFileSync(file, "utf8")), { missingIcons: options.missingIcons === "glyph" ? "warn" : "error" });
+      for (const w of res.warnings) console.warn(`[dgm] ${file}: ${w}`);
       if (!res.ok) throw new Error(`[dgm] ${file}\n  ${res.errors.join("\n  ")}`);
       const ro = {
         embedRuntime: false,

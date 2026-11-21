@@ -6,6 +6,7 @@ import { Diagram } from "@dgm/react";
 import arch, { narrow } from "../diagrams/azure-landing-zone.diagram.yaml";
 import flow from "../diagrams/login-flow.diagram.yaml";
 import er from "../diagrams/shop-er.diagram.yaml";
+import icons from "../diagrams/icons-lucide.diagram.yaml";
 import Playground from "../components/Playground.tsx";
 import sage from "../themes/sage.theme.yaml";
 
@@ -29,3 +30,9 @@ Después del diagrama el texto sigue con normalidad, y el mismo YAML se exporta 
 Cualquier tema se aplica en caliente (variables CSS), sin reconstruir el SVG:
 
 <Playground client:visible svg={flow} sage={sage} />
+
+## Iconos
+
+Lucide viene incluido (`lu-…`). Los iconos oficiales de Azure (`az-…`) y AWS (`aws-…`) se importan en local con `dgm icons sync`.
+
+<Diagram client:visible svg={icons} caption="Figura 4. Iconos Lucide en tarjetas, con tono semántico (tone: data / warn)." minWidth={420} />

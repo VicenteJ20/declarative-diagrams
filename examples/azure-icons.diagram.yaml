@@ -1,0 +1,23 @@
+# Needs the official Azure icons synced locally:  dgm icons sync azure --from <zip|folder>
+type: architecture
+title: Web app on Azure — official icons
+nodes:
+  - { id: users, label: Users, icon: lu-users }
+  - id: sub
+    label: prod-workload
+    kind: azure.subscription
+    icon: az-subscription
+    children:
+      - { id: agw, label: App Gateway, sublabel: WAF v2, icon: az-appgw }
+      - { id: web, label: App Service, sublabel: P1v3, icon: az-webapp }
+      - { id: sql, label: SQL Database, icon: az-sql, description: Private endpoint only. }
+      - { id: kv, label: Key Vault, icon: az-keyvault }
+      - { id: mon, label: Log Analytics, icon: az-loganalytics }
+edges:
+  - { from: users, to: agw, label: HTTPS, flow: true }
+  - { from: agw, to: web, flow: true }
+  - { from: web, to: sql, label: private endpoint, flow: true }
+  - { from: web, to: kv, style: dashed }
+  - { from: web, to: mon, style: dashed }
+notes:
+  - { target: kv, text: Secrets are read with a managed identity. }

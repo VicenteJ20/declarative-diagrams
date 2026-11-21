@@ -1,6 +1,7 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 import { DiagramSpec, NodeSpec, edgeIds } from "./spec.js";
 import { kindOf } from "./kinds.js";
+import { nodeIcon, STACK_ICON, HEAD_ICON } from "./icons/index.js";
 
 export interface Pt {
   x: number;
@@ -46,7 +47,7 @@ export async function layoutSpec(spec: DiagramSpec): Promise<Layout> {
     meta.set(n.id, { spec: n, depth, parent });
     if (n.children?.length) {
       const tag = kindOf(n.kind).tag ?? "";
-      const header = Math.max(textW(n.label, 12.5, true), textW(tag.toUpperCase(), 9) + 4) + 36;
+      const header = Math.max(textW(n.label, 12.5, true), textW(tag.toUpperCase(), 9) + 4) + 36 + (nodeIcon(n) ? HEAD_ICON + 8 : 0);
       return {
         id: n.id,
         width: Math.max(header, 140),
@@ -58,6 +59,11 @@ export async function layoutSpec(spec: DiagramSpec): Promise<Layout> {
         },
         children: n.children.map((c) => toElk(c, depth + 1, n.id)),
       };
+    }
+    const ic = nodeIcon(n);
+    if (ic?.variant === "stacked") {
+      const wl = Math.max(textW(n.label, 12, true), n.sublabel ? textW(n.sublabel, 10.5) : 0) + 20;
+      return { id: n.id, width: Math.ceil(Math.max(84, wl)), height: STACK_ICON + 34 + (n.sublabel ? 14 : 0) };
     }
     const shape = kindOf(n.kind).shape;
     if (shape === "entity" && n.fields?.length) {

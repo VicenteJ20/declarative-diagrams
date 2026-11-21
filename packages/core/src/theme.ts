@@ -49,6 +49,7 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
 .dgm.dim .el:not(.hl):not(.ctx){opacity:.16}
 .dgm.dim .note-g,.dgm.dim .leader{opacity:.5}
 .dgm .node.hl rect,.dgm .node.hl polygon{stroke:${v("accent")};stroke-width:1.8}
+.dgm .node.stacked:hover rect{stroke:${v("panel-stroke")}}
 .dgm .cont.hl rect{stroke:${v("accent")}}
 .dgm .edge.hl .line{stroke:${v("accent")};stroke-width:1.8}
 .dgm .edge.hl marker path{fill:${v("accent")}}
@@ -79,6 +80,8 @@ ${vars}
 .dgm .node .ftype{font-size:10.5px;fill:${v("muted")}}
 .dgm .node .key{font-size:8.5px;font-weight:700;fill:${v("accent")}}
 .dgm .endl{font-size:10.5px;fill:${v("muted")};font-family:${fSerif};font-style:italic}
+.dgm .ico{color:${v("icon-ink")}}
+.dgm .node.stacked rect{fill:transparent;stroke:transparent}
 .dgm .badge circle{stroke:none}
 .dgm .badge path{fill:none;stroke:${v("icon-ink")};stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
 .dgm .badge text{fill:${v("icon-ink")};font-size:13px;text-anchor:middle;font-family:${fSerif};font-style:italic}

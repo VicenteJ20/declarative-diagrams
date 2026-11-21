@@ -3,6 +3,7 @@ import { dirname, resolve, join } from "node:path";
 import YAML from "yaml";
 import { registerTheme, ThemeDef } from "./themes/index.js";
 import { parseThemeDef } from "./themes/schema.js";
+import { configureIcons } from "./icons/store.js";
 
 export interface ProjectConfig {
   /** Default theme name for the project. */
@@ -10,7 +11,9 @@ export interface ProjectConfig {
   /** Globs (relative to the config file) of `*.theme.yaml|json` files to register. */
   themes?: string[];
   /** Custom icon packs: `[{ prefix: "my", dir: "./icons" }]`. */
-  icons?: { prefix: string; dir: string }[];
+  icons?: { prefix: string; dir: string; monochrome?: boolean }[];
+  /** Where synced official packs live (default: `.dgm/icons`, searched upwards). */
+  iconsDir?: string;
 }
 
 export interface LoadedConfig {
@@ -42,6 +45,7 @@ export function loadConfig(start: string = process.cwd()): LoadedConfig {
   const root = file ? dirname(file) : resolve(start);
   const config: ProjectConfig = file ? JSON.parse(readFileSync(file, "utf8")) : {};
   const themes: ThemeDef[] = [];
+  configureIcons({ root, iconsDir: config.iconsDir, custom: config.icons });
   for (const pattern of config.themes ?? []) {
     for (const p of globSync(pattern, { cwd: root })) {
       const def = loadThemeFile(resolve(root, p));

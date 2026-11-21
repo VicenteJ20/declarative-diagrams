@@ -1,0 +1,22 @@
+# Needs the official AWS icons synced locally:  dgm icons sync aws --from <zip|folder>
+type: architecture
+title: Serverless API on AWS — official icons
+nodes:
+  - { id: users, label: Users, icon: lu-users }
+  - { id: cdn, label: CloudFront, icon: aws-cloudfront }
+  - id: acct
+    label: production
+    kind: aws.account
+    children:
+      - { id: alb, label: Load balancer, icon: aws-alb }
+      - { id: ecs, label: API service, sublabel: ECS Fargate, icon: aws-ecs }
+      - { id: fn, label: Worker, icon: aws-lambda }
+      - { id: db, label: Orders, icon: aws-rds }
+      - { id: s3, label: Exports, icon: aws-s3 }
+edges:
+  - { from: users, to: cdn, label: HTTPS, flow: true }
+  - { from: cdn, to: alb, flow: true }
+  - { from: alb, to: ecs, flow: true }
+  - { from: ecs, to: db }
+  - { from: ecs, to: fn, style: dashed }
+  - { from: fn, to: s3, style: dashed }

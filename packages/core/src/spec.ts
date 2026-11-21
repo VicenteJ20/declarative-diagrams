@@ -2,6 +2,7 @@ import { z } from "zod";
 import YAML from "yaml";
 import { KINDS } from "./kinds.js";
 import { TONES, Tone, resolveTheme, ThemeDef, Palette } from "./themes/index.js";
+import { resolveIcon } from "./icons/store.js";
 
 export interface NodeSpec {
   id: string;
@@ -9,6 +10,10 @@ export interface NodeSpec {
   kind?: string;
   /** Semantic colour from the theme (e.g. `warn`). Overrides the kind's default. */
   tone?: Tone;
+  /** `az-webapp`, `aws-lambda`, `lu-database`, or `<prefix>-<name>` of a custom pack. */
+  icon?: string;
+  /** How an icon is drawn: `card` (badge in a box) or `stacked` (big icon, label below). Default: card for `lu-`, stacked otherwise. */
+  variant?: "card" | "stacked";
   sublabel?: string;
   /** Shown in a tooltip on hover. */
   description?: string;
@@ -24,6 +29,8 @@ const NodeSchema: z.ZodType<NodeSpec> = z.lazy(() =>
       label: z.string(),
       kind: z.string().optional(),
       tone: z.enum(TONES).optional(),
+      icon: z.string().optional(),
+      variant: z.enum(["card", "stacked"]).optional(),
       sublabel: z.string().optional(),
       description: z.string().optional(),
       fields: z
@@ -137,7 +144,12 @@ export function edgeIds(spec: DiagramSpec): string[] {
   });
 }
 
-export function validateSpec(input: unknown): ValidationResult {
+export interface ValidateOptions {
+  /** `error` (default) fails on icons that cannot be resolved; `warn` downgrades them (renderer falls back to the kind's glyph). */
+  missingIcons?: "error" | "warn";
+}
+
+export function validateSpec(input: unknown, vopts: ValidateOptions = {}): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const parsed = SpecSchema.safeParse(input);
@@ -161,6 +173,13 @@ export function validateSpec(input: unknown): ValidationResult {
       if (parentOf.has(n.id)) errors.push(`nodes: duplicate id "${n.id}"`);
       if (/->|#/.test(n.id)) errors.push(`nodes: id "${n.id}" must not contain "->" or "#"`);
       parentOf.set(n.id, parent);
+      if (n.icon) {
+        const r = resolveIcon(n.icon);
+        if (!r.ok) {
+          const hint = r.suggestions.length ? ` — did you mean ${r.suggestions.join(", ")}?` : "";
+          (vopts.missingIcons === "warn" ? warnings : errors).push(`node "${n.id}".icon: ${r.error}${hint}`);
+        }
+      }
       if (n.kind && !KINDS[n.kind]) warnings.push(`node "${n.id}": unknown kind "${n.kind}" (falls back to a generic style)`);
       if (n.children) walk(n.children, n.id);
     }
@@ -209,6 +228,8 @@ export function specJsonSchema(): unknown {
       label: { type: "string" },
       kind: { type: "string", enum: Object.keys(KINDS) },
       tone: { enum: [...TONES] },
+      icon: { type: "string", description: "az-<name> | aws-<name> | lu-<name> | <custom-prefix>-<name>. Run `dgm icons search <text>` to discover names." },
+      variant: { enum: ["card", "stacked"] },
       sublabel: { type: "string" },
       description: { type: "string" },
       fields: {
