@@ -22,6 +22,9 @@ node packages/cli/dist/index.js --help
 npm run demo:dev                  # Astro + MDX demo
 ```
 
+OpenCode **Desktop** keeps its config in a background service: after adding/changing agents, commands, skills or `opencode.json`
+run `opencode-cli.exe reload` (see docs/agents.md) or restart the app.
+
 Rebuild (`npm run build`) after changing `packages/*/src` — the CLI, MCP server and Vite plugin run from `dist/`.
 
 ## Rules

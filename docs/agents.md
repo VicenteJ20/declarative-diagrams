@@ -35,6 +35,29 @@ This repo already contains everything OpenCode needs, so opening it with `openco
 | [`AGENTS.md`](../AGENTS.md) | project notes + the diagram workflow, read automatically by OpenCode |
 | [`.opencode/commands/`](../.opencode/commands) | `/diagram <idea>` and `/diagram-theme <brand colours>` |
 
+### OpenCode Desktop (v2) vs the terminal CLI (v1) — and "I don't see the agent"
+
+The **desktop app bundles its own CLI** (`%APPDATA%i.opencode.desktop\cli\<version>\opencode-cli.exe`, v2.x) and runs a **background
+service** that loads the configuration once. The terminal `opencode` you installed with npm can be a different major version
+(1.x). This project works with both: the V1-style `opencode.json`, agent and command files are normalised to V2 in memory
+(checked: V2 shows `dgm` under `mcp.servers`, `skills` as a list, and the agent with its permissions translated).
+
+If the agent (or the `dgm` tools) does not show up in the desktop app:
+
+1. **Reload the service** — it keeps the old config until told otherwise:
+
+   ```powershell
+   & (Get-ChildItem "$env:APPDATAi.opencode.desktop\cli\*\opencode-cli.exe" | Sort-Object LastWriteTime | Select-Object -Last 1).FullName reload
+   ```
+
+   (`... service restart` if reload is not enough.) Then reopen the project in the app.
+2. **Open the right folder.** Project agents live in `.opencode/agents/` of the project; the picker only lists them for sessions
+   opened in `diagrams-maker/` (or a folder where you ran `dgm agent install`). Use `--global` to have it everywhere.
+3. **Check what the app's CLI sees** from the project folder (same commands as the terminal, with the bundled binary):
+   `opencode-cli.exe debug agents` (lists agent ids) and `opencode-cli.exe mcp list` (→ `✓ dgm connected`).
+
+Note that V2 ignores a few V1 fields (e.g. `temperature` in the agent file); they are harmless.
+
 ### The agent: `diagram-specialist`
 
 [`.opencode/agents/diagram-specialist.md`](../.opencode/agents/diagram-specialist.md) is a **primary agent** you talk to directly
