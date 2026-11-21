@@ -20,6 +20,8 @@ job is the *content and structure*.
 - [ ] Do edges cross containers only where it matters? Any long detour that suggests a better nesting or `direction`?
 - [ ] Are the containers the right levels (not three nested panels with one resource)?
 - [ ] ≤ 15 nodes, ≤ 5 notes, 3–5 steps?
+- [ ] Proportions between ≈ 1.5 and 3.5 : 1? (`render_diagram` prints the size; a `LAYOUT NOTE` means fix it.) Side branches folded with `stackWith`?
+- [ ] Reading order marked with `badge`, edge styles explained by `legend` (not a wall of notes)?
 - [ ] Is the main path obvious (animated edges, left-to-right or top-to-bottom)?
 - [ ] Do edge labels say protocol/port/verb, not repeat the node names?
 - [ ] Icons are official for cloud resources and consistent (don't mix `card` and `stacked` styles arbitrarily).
@@ -30,6 +32,7 @@ job is the *content and structure*.
 
 | Symptom | Fix |
 |---|---|
+| Very wide / elongated (> 3.5 : 1) | fold branches with `stackWith` (below the anchor); put the optional/offline path in the stack; shorten notes and keep `notesPosition: side`; `direction: DOWN`; split |
 | Very wide diagram | `direction: DOWN`, or split; add `variants: { narrow: {} }` |
 | Edge snakes around a container | connect to the node next to the border; or move the node into the container it talks to |
 | Cluttered middle | remove obvious edges (everything→monitoring): say it in a note |

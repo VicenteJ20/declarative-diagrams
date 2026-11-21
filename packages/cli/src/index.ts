@@ -21,6 +21,9 @@ import {
   type FontMode,
   parseThemeDef,
   applyVariant,
+  canvasAdvice,
+  pngSize,
+  svgSize,
   syncPack,
   importInbox,
   listIcons,
@@ -378,14 +381,21 @@ async function main() {
         if (!v) throw new Error(`spec has no variants.${flag(args, "--variant")}`);
         target = v;
       }
+      let size: { width: number; height: number } | null = null;
       mkdirSync(dirname(out), { recursive: true });
       if (extname(out).toLowerCase() === ".png") {
         const scale = Number(flag(args, "--scale") ?? 2);
-        writeFileSync(out, await renderPng(target, { theme, mode, scale, aspect, padding, font }));
+        const png = await renderPng(target, { theme, mode, scale, aspect, padding, font });
+        writeFileSync(out, png);
+        size = pngSize(png);
       } else {
-        writeFileSync(out, await renderSvg(target, { theme, mode, aspect, padding, font, static: args.includes("--static") }));
+        const svg = await renderSvg(target, { theme, mode, aspect, padding, font, static: args.includes("--static") });
+        writeFileSync(out, svg);
+        size = svgSize(svg);
       }
-      console.log(`wrote ${out}`);
+      const adv = size ? canvasAdvice(size.width, size.height) : null;
+      console.log(`wrote ${out}${adv ? `  —  ${adv.text}` : ""}`);
+      if (adv?.hint && !aspect) console.log(`note: ${adv.hint}`);
       break;
     }
     default:

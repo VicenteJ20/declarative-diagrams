@@ -17,7 +17,7 @@ In OpenCode, switch to the **`diagram-specialist`** agent (Tab) — it owns this
 
 ```
 npm install && npm run build      # build all packages (the MCP server runs from packages/mcp/dist)
-npm test                          # vitest (64 tests; docs YAML blocks are validated too)
+npm test                          # vitest (73 tests; docs YAML blocks are validated too)
 node packages/cli/dist/index.js --help
 npm run demo:dev                  # Astro + MDX demo
 ```

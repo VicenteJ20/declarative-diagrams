@@ -47,7 +47,7 @@ The output style is Distill.pub-like (pale panels, one accent, serif annotations
 
 1. **Inventory** what is in the image, silently first: title; container hierarchy (outermost → innermost); every node with its label and vendor/icon type; every connection with direction, label, line style (solid/dashed), emphasis; annotations/legend; overall flow direction (left→right / top→bottom); colours with meaning.
 2. **Confirm only the uncertain parts**, in a compact list ("No distingo si X→Y es flecha doble; asumí que sí"). If the picture is clear, skip this.
-3. **Map to this tool's vocabulary**: containers → `kind` (`azure.subscription`, `azure.resource-group`, `azure.vnet`, `azure.subnet`, `aws.account`, `aws.vpc`, `aws.subnet`, `cloud`, `onprem`, `network`…); vendor icons → `az-…`/`aws-…` found with `dgm_search_icons`; generic shapes → `lu-…` or a leaf `kind`; arrow styles → `style`, `flow`, `both`; call-outs → `notes`; numbered walk-throughs → `steps`; emphasis colours → `tone` (`warn`, `danger`, `ok`, `accent`, `data`, `network`).
+3. **Map to this tool's vocabulary** (a branch drawn *under* a step in the picture = `stackWith`; circled numbers = `badge`; a key at the bottom = `legend`; no-box icons with labels under them = `variant: stacked`): containers → `kind` (`azure.subscription`, `azure.resource-group`, `azure.vnet`, `azure.subnet`, `aws.account`, `aws.vpc`, `aws.subnet`, `cloud`, `onprem`, `network`…); vendor icons → `az-…`/`aws-…` found with `dgm_search_icons`; generic shapes → `lu-…` or a leaf `kind`; arrow styles → `style`, `flow`, `both`; call-outs → `notes`; numbered walk-throughs → `steps`; emphasis colours → `tone` (`warn`, `danger`, `ok`, `accent`, `data`, `network`).
 4. **Palette from the image** (only if the user wants the same look): pick the 1–3 dominant brand colours and use `dgm_create_theme` (accent, flow, neutral) → `dgm_preview_theme` → check contrast → save. Do not recolour official icons.
 5. **Build**, render, and **compare against the reference**: every node and edge present? labels right? hierarchy right? Report differences and what you changed on purpose (e.g. merged two arrows, moved a label to a note).
 6. For "same as the previous but changing X": keep structure and ids, change only X, and say what changed.
@@ -88,6 +88,7 @@ nodes:
     children:
       - { id: web, label: App Service, sublabel: P1v3, icon: az-webapp, description: Tooltip text }
       - { id: sql, label: SQL Database, icon: az-sql, tone: data }
+      - { id: cache, label: Cache, icon: lu-zap, stackWith: web, badge: 2 }   # same step as `web`, below it
 edges:
   - { from: users, to: web, label: HTTPS, flow: true }     # animated: main path only
   - { from: web, to: sql, label: private endpoint }
@@ -95,6 +96,9 @@ notes:
   - { target: sql, text: One or two sentences. }            # target = node id or edge id "a->b"
 steps:
   - { title: A request arrives, show: [users, web] }
+legend:
+  - { style: solid, label: Inside the subscription }      # compact edge-style key under the diagram
+  - { style: dashed, label: Optional }
 variants:
   narrow: {}                                                 # optional vertical layout for phones
 ```
@@ -104,6 +108,24 @@ variants:
 - Flow kinds: `start end process decision io`. ER: `kind: entity` with `fields: [{name, type, key: pk|fk}]` and edges with `fromLabel`/`toLabel` cardinality.
 - Edges never join a container to its own descendant; avoid crossing many container levels.
 - `flow: true` on 2–3 edges only; `style: dashed` for async/optional/management. ≤ 5 notes, 3–5 steps. Short ids (kebab-case), short labels, details in `sublabel`/`description`/notes.
+
+## 4b. Compact layouts — read before drawing
+
+A diagram that comes out as a long strip (≈ 5 : 1) is a layout failure, not a style choice. Aim for **≈ 1.5–3.5 : 1** (wide : tall)
+and check the numbers: `dgm_render_diagram` prints `Canvas W×H px (A:1)` and a **`LAYOUT NOTE`** when it is out of range — act on it.
+
+- **Fold side branches with `stackWith: <anchorId>`**: same step as the anchor, placed *below* it (flow `RIGHT`) or *beside* it (flow
+  `DOWN`). Typical cases: an offline/local alternative under the online step, a provider under its gateway, a read replica under its
+  primary, a secondary store under the main one. The anchor stays on the main row; the arrow between them is short and vertical.
+  Only siblings (same parent) and only leaf nodes can be stacked; chains of 3+ are fine.
+- **Number the reading order with `badge: 1…n`** instead of explaining it in notes; explain **line styles with `legend`**
+  (`solid` = inside / always, `dashed` = optional / leaves the boundary) instead of a note.
+- **Notes**: keep `notesPosition: side` (the default) and ≤ 3 short ones; long explanations belong in `description` (tooltip) or `steps`.
+  A tall list of notes under the diagram is what stretches the canvas the most after a long chain.
+- **Actors and "outside" things** (users, a meeting, a client): `lu-` icon with `variant: stacked` (icon + label, no box) matches the
+  official-icon look when the rest uses stacked icons.
+- When the user gives a **reference image**, estimate its width:height and aim within ±30 % of it.
+- Still too wide after folding? Try `direction: DOWN`, remove nodes that do not carry the message, or split overview/detail.
 
 ## 5. Turning a request into outputs
 
@@ -138,7 +160,7 @@ import arch, { narrow } from "../diagrams/<name>.diagram.yaml";
 3. Plan the structure in your head: containers, nodes, the 2–3 key flows, ≤ 5 notes. If the scope exceeds ~15 nodes, **propose a split** (overview + detail diagrams) and do the overview first.
 4. `dgm_search_icons` for every resource; write the spec.
 5. `dgm_validate_diagram` → fix → repeat.
-6. `dgm_render_diagram` (PNG) and **look at the image** if you can see tool images: overlapping labels, arrows that detour around containers, unreadable text, empty containers, too many colours. Iterate up to **4 times**, one change at a time (direction, nesting, fewer cross-container edges, shorter labels, split). If you cannot see the image, rely on validation and a structural check (nodes/edges/levels vs the request) and say you could not inspect the render.
+6. `dgm_render_diagram` (PNG): read the size line and any `LAYOUT NOTE` first (section 4b), then **look at the image** if you can see tool images: overlapping labels, arrows that detour around containers, unreadable text, empty containers, too many colours. Iterate up to **4 times**, one change at a time (direction, nesting, fewer cross-container edges, shorter labels, split). If you cannot see the image, rely on validation and a structural check (nodes/edges/levels vs the request) and say you could not inspect the render.
 7. Save (`dgm_write_diagram`) and export what was asked.
 8. Answer with the **delivery summary**.
 

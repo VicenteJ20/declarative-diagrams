@@ -99,6 +99,9 @@ ${toneRules}
 .dgm .elabel text{font-size:10.5px;fill:${v("muted")}}
 .dgm .mark circle{fill:${v("accent")}}
 .dgm .mark text{fill:${v("panel-b")};font-size:9.5px;font-weight:600;text-anchor:middle;font-family:${fSans}}
+.dgm .bdg text{font-size:10px}
+.dgm .legend text{font-size:11px;fill:${v("muted")}}
+.dgm .legend-rule{stroke:${v("panel-stroke")};stroke-width:1}
 .dgm .leader{fill:none;stroke:${v("muted")};stroke-width:.8;stroke-dasharray:1.5 2.5}
 ${interactive}
 `;

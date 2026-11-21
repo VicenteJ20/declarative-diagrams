@@ -12,6 +12,7 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `theme` | theme name or inline theme (see themes.md). Render options override it |
 | `font` | `mixed` (default) · `sans` · `serif` — typeface style of the whole diagram |
 | `palette` | token overrides: `{ accent: "#…", dark: { accent: "#…" }, tones: { data: "#…" } }` |
+| `legend` | compact key under the diagram: `[{ style: solid, label: Inside }, { style: dashed, label: Optional }]` |
 | `notesPosition` | `side` (margin gutter, default) or `below` (numbered list under the diagram) |
 | `variants.narrow` | optional vertical layout for narrow screens: `{ direction?: DOWN, notesPosition?: below }`; `{}` = both defaults |
 | `nodes` | list of nodes (required) |
@@ -25,6 +26,8 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `label` | text; `sublabel` second line; `description` tooltip |
 | `kind` | style/semantics: see `list_kinds` |
 | `icon` | `az-…`, `aws-…`, `lu-…`, or a project pack prefix (icons.md) |
+| `stackWith` | id of a **sibling leaf**: put this node in the same step, stacked across the flow — below it when `direction: RIGHT`, to its right when `DOWN`. Chains (`c` with `stackWith: b`, `b` with `stackWith: a`) form one column. Edges between stacked nodes are short straight arrows |
+| `badge` | small circle on the node with a sequence marker (`1`, `2`, `A`…) |
 | `variant` | `card` or `stacked` (defaults: `lu-` → card; official/custom → stacked) |
 | `tone` | `compute data network neutral accent ok warn danger info` — semantic colour from the theme |
 | `children` | makes it a **container**; children are laid out inside it, recursively |
@@ -83,6 +86,35 @@ nodes:
 edges:
   - { from: customer, to: order, fromLabel: "1", toLabel: "N", label: places }
 ```
+
+## Compact layouts
+
+A chain of N steps is N columns wide. To keep the diagram near 1.5–3.5 : 1:
+
+```yaml
+type: architecture
+title: Pipeline with a local branch
+nodes:
+  - { id: src, label: Source, icon: lu-mic, variant: stacked }
+  - id: box
+    label: Your computer
+    kind: onprem
+    children:
+      - { id: ingest, label: Ingest, icon: lu-audio-waveform, variant: stacked, badge: 1 }
+      - { id: store, label: Store, icon: lu-database, variant: stacked, badge: 2 }
+      - { id: ask, label: Ask, icon: lu-sparkles, variant: stacked, badge: 3 }
+      - { id: local, label: Local model, icon: lu-cpu, variant: stacked, badge: 4, stackWith: ask }
+edges:
+  - { from: src, to: ingest, flow: true }
+  - { from: ingest, to: store }
+  - { from: store, to: ask }
+  - { from: ask, to: local, label: offline }
+legend:
+  - { style: solid, label: Stays on this machine }
+```
+
+Rules: `stackWith` targets a sibling (same parent) that is a leaf (no children); no cycles. In a stack, edges from the outside attach to
+the member they name, so the main row stays on one line. Prefer stacking the *optional/offline/alternative* branch, not the main path.
 
 ## Limits worth knowing
 

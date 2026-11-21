@@ -13,3 +13,5 @@ export { parseThemeDef, ThemeDefSchema } from "./themes/schema.js";
 export { resolveIcon, parseIconRef, configureIcons, listIcons, listAliases, syncPack, importInbox, detectPack, syncedPacks, OFFICIAL_URL } from "./icons/index.js";
 export type { IconResult, CustomPack, OfficialPack } from "./icons/index.js";
 export type { ValidateOptions } from "./spec.js";
+export { canvasAdvice, pngSize, svgSize, WIDE_LIMIT, TALL_LIMIT } from "./diagnostics.js";
+export type { CanvasAdvice } from "./diagnostics.js";

@@ -163,9 +163,10 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   });
 
   // ---- canvas: content size, optional padding, optional target aspect ratio (letterboxed, content centred) ----
+  const legendH = spec.legend?.length ? 36 : 0;
   const pad = opts.padding ?? 16;
   let W = layout.width + GUTTER + 2 * pad;
-  let H = layout.height + titleH + stepperH + notesH + 2 * pad;
+  let H = layout.height + titleH + stepperH + notesH + legendH + 2 * pad;
   let dx = pad;
   let dy = pad;
   if (opts.aspect && opts.aspect > 0) {
@@ -205,6 +206,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
         `<text class="head" x="${n(nd.x + 12 + off)}" y="${n(ty)}">${esc(nd.spec.label)}</text>` +
         `</g>`;
     } else {
+      const nodeStart = nodeSvg.length;
       const cy = nd.y + nd.h / 2;
       const cx = nd.x + nd.w / 2;
       // tone: card nodes tint their badge; flat shapes (pill/diamond/plain/entity) tint the whole shape
@@ -263,6 +265,16 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
           `<text class="head" x="${n(nd.x + 38)}" y="${n(nd.spec.sublabel ? cy - 3 : cy + 4.5)}">${esc(nd.spec.label)}</text>` +
           (nd.spec.sublabel ? `<text class="sub" x="${n(nd.x + 38)}" y="${n(cy + 12)}">${esc(nd.spec.sublabel)}</text>` : "") +
           `</g>`;
+      }
+      // step badge (sequence marker) inside the node's group, so it dims/highlights with it
+      if (nd.spec.badge != null && String(nd.spec.badge) !== "") {
+        const stk = ic && ic.variant === "stacked";
+        const bx = stk ? cx - STACK_ICON / 2 - 4 : nd.x + 2;
+        const by = stk ? nd.y + 10 : nd.y + 2;
+        const chunk = nodeSvg.slice(nodeStart);
+        nodeSvg =
+          nodeSvg.slice(0, nodeStart) +
+          chunk.replace(/<\/g>$/, `<g class="mark bdg" transform="translate(${n(bx)} ${n(by)})"><circle r="9"/><text y="3.8">${esc(String(nd.spec.badge))}</text></g></g>`);
       }
     }
   }
@@ -326,12 +338,27 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   // ---- stepper ----
   let stepper = "";
   if (spec.steps.length && !isStatic) {
-    const sy = layout.height + titleH + notesH + 8;
+    const sy = layout.height + titleH + notesH + legendH + 8;
     stepper =
       `<g class="stepper" transform="translate(0 ${sy})">` +
       `<g class="btn" data-act="prev" tabindex="0"><rect x="0" y="0" width="26" height="24" rx="5"/><text x="13" y="16.5">‹</text></g>` +
       `<g class="btn" data-act="next" tabindex="0"><rect x="32" y="0" width="26" height="24" rx="5"/><text x="45" y="16.5">›</text></g>` +
       `<text class="step-label" x="70" y="16"></text></g>`;
+  }
+
+  // ---- legend: compact key for edge styles ----
+  let legend = "";
+  if (spec.legend?.length) {
+    const ly = layout.height + titleH + notesH + 22;
+    let lx = 0;
+    legend = `<g class="legend"><line class="legend-rule" x1="0" x2="${n(layout.width + GUTTER - 2)}" y1="${n(ly - 14)}" y2="${n(ly - 14)}"/>`;
+    for (const it of spec.legend) {
+      legend +=
+        `<g class="edge legend-item${it.style === "dashed" ? " dashed" : ""}"><path class="line" d="M${n(lx)} ${n(ly)}H${n(lx + 34)}" marker-end="url(#dgm-arrow)"/></g>` +
+        `<text x="${n(lx + 44)}" y="${n(ly + 3.5)}">${esc(it.label)}</text>`;
+      lx += 44 + Math.ceil(it.label.length * 11 * 0.56) + 36;
+    }
+    legend += `</g>`;
   }
 
   const title = spec.title ? `<text class="title" x="0" y="18">${esc(spec.title)}</text>` : "";
@@ -355,6 +382,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     `<g transform="translate(${n(dx)} ${n(dy)})">` +
     title +
     `<g transform="translate(${ox} ${oy})">${contSvg}${edgeSvg}${nodeSvg}${notesSvg}</g>` +
+    legend +
     stepper +
     `</g>` +
     script +

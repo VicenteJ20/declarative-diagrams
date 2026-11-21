@@ -40,3 +40,20 @@ default (`--padding 0` removes it);
 
 Nodes drawn *stacked* (official Azure/AWS icons: big icon, label under it) are wider than their icon, so arrows start and end at
 the **icon's edge** (5 px gap) instead of the invisible box, and layers get more spacing (92 vs 64). Card nodes are unchanged.
+
+## Compact layouts: `stackWith`, `badge`, `legend`
+
+A pipeline of N steps is N columns wide. Branches that go *sideways* in your head (an offline model under the "insights" step, a
+provider under a gateway) should not become extra columns:
+
+```yaml
+- { id: insights, label: Insights, icon: lu-sparkles, variant: stacked, badge: 4 }
+- { id: local-ai, label: Local AI, icon: lu-cpu, variant: stacked, badge: 5, stackWith: insights }   # below insights
+```
+
+- `stackWith: <sibling id>` — same step, stacked across the flow: **below** when `direction: RIGHT`, **beside** when `DOWN`.
+  Stacks can have 3+ members; the stack takes the anchor's place. Edges from outside attach to the member they name (the main row
+  stays aligned on the icon line); edges between members are short straight arrows (a bracket on the outside if not adjacent).
+- `badge: 1` — a small numbered circle on the node (reading order).
+- `legend: [{ style: solid, label: … }, { style: dashed, label: … }]` — a one-line key under the diagram.
+- `dgm render` and the MCP `render_diagram` print the canvas size and warn when it is far from ≈ 1.5–3.5 : 1.

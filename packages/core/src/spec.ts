@@ -12,6 +12,13 @@ export interface NodeSpec {
   tone?: Tone;
   /** `az-webapp`, `aws-lambda`, `lu-database`, or `<prefix>-<name>` of a custom pack. */
   icon?: string;
+  /**
+   * Put this node in the SAME STEP as `<id>` (a sibling), stacked across the flow: below it when `direction: RIGHT`,
+   * to its right when `DOWN`. Use it for branches that go sideways instead of lengthening the diagram.
+   */
+  stackWith?: string;
+  /** Small numbered/lettered circle on the node (sequence markers: 1, 2, 3 …). */
+  badge?: string | number;
   /** How an icon is drawn: `card` (badge in a box) or `stacked` (big icon, label below). Default: card for `lu-`, stacked otherwise. */
   variant?: "card" | "stacked";
   sublabel?: string;
@@ -30,6 +37,8 @@ const NodeSchema: z.ZodType<NodeSpec> = z.lazy(() =>
       kind: z.string().optional(),
       tone: z.enum(TONES).optional(),
       icon: z.string().optional(),
+      stackWith: z.string().optional(),
+      badge: z.union([z.string(), z.number()]).optional(),
       variant: z.enum(["card", "stacked"]).optional(),
       sublabel: z.string().optional(),
       description: z.string().optional(),
@@ -102,6 +111,10 @@ export const SpecSchema = z
           .optional(),
       })
       .strict()
+      .optional(),
+    /** Compact key under the diagram, e.g. [{ style: solid, label: "Inside your computer" }, { style: dashed, label: "Optional cloud" }]. */
+    legend: z
+      .array(z.object({ label: z.string(), style: z.enum(["solid", "dashed"]).default("solid") }).strict())
       .optional(),
     nodes: z.array(NodeSchema).min(1),
     edges: z.array(EdgeSchema).default([]),
@@ -188,6 +201,30 @@ export function validateSpec(input: unknown, vopts: ValidateOptions = {}): Valid
   };
   walk(spec.nodes);
 
+  // stackWith: sibling leaf, no self/cycles
+  const checkStacks = (nodes: NodeSpec[], where: string) => {
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    for (const n of nodes) {
+      if (n.children?.length) checkStacks(n.children, n.id);
+      if (!n.stackWith) continue;
+      const a = byId.get(n.stackWith);
+      if (n.stackWith === n.id) errors.push(`node "${n.id}".stackWith: a node cannot be stacked with itself`);
+      else if (!a) errors.push(`node "${n.id}".stackWith: "${n.stackWith}" must be a sibling (same parent as "${n.id}", inside ${where})`);
+      else if (n.children?.length || a.children?.length) errors.push(`node "${n.id}".stackWith: only leaf nodes (no children) can be stacked`);
+      else {
+        let cur: NodeSpec | undefined = a;
+        for (let i = 0; cur?.stackWith && i <= nodes.length; i++) {
+          if (cur.stackWith === n.id) {
+            errors.push(`node "${n.id}".stackWith: cycle (${n.id} → ${n.stackWith} → … → ${n.id})`);
+            break;
+          }
+          cur = byId.get(cur.stackWith);
+        }
+      }
+    }
+  };
+  checkStacks(spec.nodes, "the top level");
+
   const isAncestor = (a: string, b: string) => {
     for (let p = parentOf.get(b); p; p = parentOf.get(p)) if (p === a) return true;
     return false;
@@ -232,6 +269,8 @@ export function specJsonSchema(): unknown {
       tone: { enum: [...TONES] },
       icon: { type: "string", description: "az-<name> | aws-<name> | lu-<name> | <custom-prefix>-<name>. Run `dgm icons search <text>` to discover names." },
       variant: { enum: ["card", "stacked"] },
+      stackWith: { type: "string", description: "id of a sibling leaf: same step, stacked across the flow (below it when direction RIGHT, beside it when DOWN)" },
+      badge: { type: ["string", "number"], description: "sequence marker shown on the node, e.g. 1, 2, 3" },
       sublabel: { type: "string" },
       description: { type: "string" },
       fields: {
@@ -258,6 +297,11 @@ export function specJsonSchema(): unknown {
       description: { type: "string" },
       direction: { enum: ["RIGHT", "DOWN"] },
       notesPosition: { enum: ["side", "below"] },
+      legend: {
+        type: "array",
+        items: { type: "object", required: ["label"], additionalProperties: false, properties: { label: { type: "string" }, style: { enum: ["solid", "dashed"] } } },
+        description: "compact key for edge styles, drawn under the diagram",
+      },
       variants: {
         type: "object",
         additionalProperties: false,

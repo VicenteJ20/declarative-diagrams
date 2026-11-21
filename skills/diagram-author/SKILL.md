@@ -55,14 +55,19 @@ nodes:
     children:
       - { id: web, label: App Service, sublabel: P1v3, icon: az-webapp, description: Shown in the tooltip. }
       - { id: db, label: SQL Database, icon: az-sql }
+      - { id: cache, label: Cache, icon: lu-zap, stackWith: web, badge: 2 }   # same step as `web`, stacked below it
 edges:
   - { from: users, to: web, label: HTTPS, flow: true }      # flow: animated packets (main path only)
   - { from: web, to: db, label: private endpoint }
   - { from: web, to: users, style: dashed }                 # dashed = async / optional / control plane
+  - { from: web, to: cache, label: reads }                  # between stacked nodes: a short vertical arrow
 notes:
   - { target: db, text: One or two sentences. }              # numbered margin note; target = node id or edge id "a->b"
 steps:
   - { title: A request arrives, show: [users, web] }         # click-through narration; edges between shown nodes light up
+legend:
+  - { style: solid, label: Stays inside the subscription }   # compact key for edge styles, drawn under the diagram
+  - { style: dashed, label: Optional }
 ```
 
 Full reference: `get_authoring_guide topic=spec`.
@@ -77,6 +82,10 @@ Full reference: `get_authoring_guide topic=spec`.
 - **Notes ≤ 5**, steps 3–5. They are for what the picture cannot say (why, limits, trust boundaries).
 - **Semantic colour with `tone`** (`warn`, `danger`, `ok`, `accent`, `data`, `network`) — sparingly, one meaning each.
 - **Ids**: short, unique, kebab-case; no `->` or `#`.
+- **Keep it compact** (target ≈ 1.5–3.5 : 1, wide:tall). A single long chain is the usual cause of a stretched diagram.
+  Fold side branches with **`stackWith: <id>`** — same step as the anchor, stacked *below* it (flow `RIGHT`) or *beside* it (flow
+  `DOWN`) — instead of letting every node take its own column. Use `badge: 1…n` for the reading order and `legend` for solid vs
+  dashed edges instead of long notes. `render_diagram` reports the size and a `LAYOUT NOTE` when the proportions are poor: act on it.
 - **Layout**: `RIGHT` for left-to-right pipelines, `DOWN` for layered/flow diagrams. For phones, add
   `variants: { narrow: {} }` (vertical, notes below) — only used when the page opts in.
 

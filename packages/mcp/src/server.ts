@@ -8,6 +8,9 @@ import {
   KINDS,
   TONES,
   applyVariant,
+  canvasAdvice,
+  pngSize,
+  svgSize,
   checkTheme,
   importInbox,
   listIcons,
@@ -453,14 +456,18 @@ export function createServer(opts: ServerOptions): McpServer {
             writeFileSync(f, png);
             saved = ` Saved to ${relative(root, f)}.`;
           }
-          return { content: [{ type: "text", text: `Rendered PNG (${Math.round(png.length / 1024)} KB).${saved}${warn}` }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] as Content[] };
+          const adv = canvasAdvice(pngSize(png).width, pngSize(png).height);
+          const advText = `${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}`;
+          return { content: [{ type: "text", text: `Rendered PNG (${Math.round(png.length / 1024)} KB). ${advText}${saved}${warn}` }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] as Content[] };
         }
         const svg = await renderSvg(spec, { ...ro, static: a.static });
         if (a.save_to) {
           const f = inRoot(a.save_to);
           mkdirSync(dirname(f), { recursive: true });
           writeFileSync(f, svg);
-          return text(`Rendered SVG (${Math.round(svg.length / 1024)} KB) → ${relative(root, f)}${a.static ? "" : " (interactive: embed inline, <object> or via <Diagram>; <img> loses the script)"}.${warn}`);
+          const sz = svgSize(svg);
+          const adv = sz ? canvasAdvice(sz.width, sz.height) : null;
+          return text(`Rendered SVG (${Math.round(svg.length / 1024)} KB) → ${relative(root, f)}${a.static ? "" : " (interactive: embed inline, <object> or via <Diagram>; <img> loses the script)"}.${adv ? ` ${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}` : ""}${warn}`);
         }
         return text(svg.length > 200_000 ? `SVG is ${Math.round(svg.length / 1024)} KB — pass save_to to write it to a file instead.` : svg + warn);
       } catch (e) {
