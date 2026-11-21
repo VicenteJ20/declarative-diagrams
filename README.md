@@ -37,7 +37,7 @@ npm run demo:dev                                                                
 | `skills/diagram-author` | Skill: workflow, patterns, style guide |
 
 Docs: [themes & mode](docs/themes.md) · [aspect ratio & responsive](docs/layout.md) · [icons (Azure/AWS/Lucide/custom)](docs/icons.md) ·
-[AI agents (MCP + Skill)](docs/agents.md).
+[AI agents — Claude Code and OpenCode (MCP + Skill)](docs/agents.md).
 
 Official Azure/AWS icons are **not** included: download the zips yourself, drop them in `icons-inbox/<pack>/` and run
 `dgm icons update` (see [docs/icons.md](docs/icons.md)).

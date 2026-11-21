@@ -20,6 +20,8 @@ with `<Diagram />`.
 | Save / export | `write_diagram` · `render_diagram` with `save_to` [`dgm render f -o x.svg`] |
 | Themes | `list_themes` · `get_theme` · `create_theme` · `preview_theme` [`dgm theme …`] |
 
+*Tool names: Claude Code shows them as `mcp__dgm__<tool>`, OpenCode as `dgm_<tool>`; the tool is the same.*
+
 ## Workflow
 
 1. **Understand the point.** One diagram = one idea. Ask only if something blocks you (which cloud? what must the reader

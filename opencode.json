@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "dgm": {
+      "type": "local",
+      "command": ["node", "packages/mcp/dist/index.js", "--root", "."],
+      "enabled": true
+    }
+  },
+  "skills": { "paths": ["skills"] }
+}

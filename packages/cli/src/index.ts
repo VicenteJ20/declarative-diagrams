@@ -51,8 +51,11 @@ Usage:
   dgm icons search <text> [--pack az|aws|lu|<prefix>]   Find icon names
   dgm icons list [--pack …] | packs | aliases <azure|aws>
 
-  dgm skill install [--global]      Install the "diagram-author" Skill for Claude Code (.claude/skills/ or ~/.claude/skills/)
-  dgm mcp config                    Print the MCP server config (Claude Code .mcp.json / Claude Desktop)
+  dgm skill install [--global] [--target claude|opencode]
+                                    Install the "diagram-author" Skill: .claude/skills/ (default) or .opencode/skills/
+                                    (--global: ~/.claude/skills or ~/.config/opencode/skills)
+  dgm mcp config [--client claude|opencode]
+                                    Print the MCP server config (Claude Code/Desktop .mcp.json, or OpenCode opencode.json)
 
   dgm theme list                    Built-in and project themes
   dgm theme show <name|file>        Resolved tokens (light + dark) as YAML
@@ -305,20 +308,33 @@ async function main() {
       const src = [process.env.DGM_SKILL_DIR, resolve(here, "../../../skills/diagram-author")].find((d) => d && existsSync(join(d, "SKILL.md")));
       if (!src) throw new Error("Skill files not found (expected skills/diagram-author next to the packages).");
       const root = loadConfig().root;
-      const dest = args.includes("--global") ? join(homedir(), ".claude", "skills", "diagram-author") : resolve(root, ".claude", "skills", "diagram-author");
+      const target = flag(args, "--target") ?? "claude";
+      if (target !== "claude" && target !== "opencode") throw new Error("--target must be claude or opencode");
+      const dest =
+        target === "opencode"
+          ? args.includes("--global") ? join(homedir(), ".config", "opencode", "skills", "diagram-author") : resolve(root, ".opencode", "skills", "diagram-author")
+          : args.includes("--global") ? join(homedir(), ".claude", "skills", "diagram-author") : resolve(root, ".claude", "skills", "diagram-author");
       mkdirSync(dirname(dest), { recursive: true });
       cpSync(src, dest, { recursive: true, force: true });
       console.log(`Installed the diagram-author Skill to ${dest}`);
-      console.log("Restart Claude Code (or start a new session) to load it. The MCP server gives it the tools: dgm mcp config");
+      console.log(`Restart ${target === "opencode" ? "OpenCode" : "Claude Code"} (or start a new session) to load it. The MCP server gives it the tools: dgm mcp config --client ${target}`);
       break;
     }
     case "mcp": {
       if (args[0] !== "config") throw new Error("usage: dgm mcp config");
       const server = resolve(here, "../../mcp/dist/index.js");
       if (!existsSync(server)) throw new Error(`MCP server not built (${server}). Run: npm run build`);
-      const cfg = { mcpServers: { dgm: { command: "node", args: [server, "--root", loadConfig().root] } } };
+      const projectRoot = loadConfig().root;
+      if ((flag(args, "--client") ?? "claude") === "opencode") {
+        // OpenCode (config schema of 1.x: servers directly under `mcp`). Put it in opencode.json; skills are found via .opencode/skills
+        console.log(JSON.stringify({ $schema: "https://opencode.ai/config.json", mcp: { dgm: { type: "local", command: ["node", server, "--root", projectRoot], enabled: true } } }, null, 2));
+        console.log("\n# Skill for OpenCode:  dgm skill install --target opencode   (restart OpenCode afterwards)");
+        console.log("# Check:  opencode mcp list   ->  dgm connected");
+        break;
+      }
+      const cfg = { mcpServers: { dgm: { command: "node", args: [server, "--root", projectRoot] } } };
       console.log(JSON.stringify(cfg, null, 2));
-      console.log(`\n# Claude Code:  claude mcp add dgm -- node "${server}" --root "${loadConfig().root}"`);
+      console.log(`\n# Claude Code:  claude mcp add dgm -- node "${server}" --root "${projectRoot}"`);
       break;
     }
     case "render": {

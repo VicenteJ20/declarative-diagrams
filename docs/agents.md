@@ -25,6 +25,33 @@ claude mcp add dgm -- node C:\path\to\diagrams-maker\packages\mcp\dist\index.js 
 `--root` is the project the agent works in: `dgm.config.json`, `themes/`, your `*.diagram.yaml`, and `.dgm/icons` are read from
 there, and **every write stays inside it**. Claude Desktop: paste the JSON from `dgm mcp config` into its MCP settings.
 
+## Setup (OpenCode)
+
+This repo already contains everything OpenCode needs, so opening it with `opencode` is enough (after `npm run build`):
+
+| File | What it does |
+|---|---|
+| [`opencode.json`](../opencode.json) | registers the MCP server `dgm` (`mcp.dgm`, local) and adds `skills/` as a skills path |
+| [`AGENTS.md`](../AGENTS.md) | project notes + the diagram workflow, read automatically by OpenCode |
+| [`.opencode/commands/`](../.opencode/commands) | `/diagram <idea>` and `/diagram-theme <brand colours>` |
+
+Verified with OpenCode 1.17.9: `opencode mcp list` → `✓ dgm connected`; `opencode debug skill` lists `diagram-author`
+(from `skills/`, no copy). Tools appear to the model as `dgm_<tool>` (e.g. `dgm_render_diagram`). Restart OpenCode after
+changing config or the Skill — it is loaded once at startup.
+
+For **another project**:
+
+```powershell
+node packages/cli/dist/index.js mcp config --client opencode      # prints the opencode.json block (absolute paths)
+node packages/cli/dist/index.js skill install --target opencode   # .opencode/skills/diagram-author  (--global: ~/.config/opencode/skills)
+```
+
+Config schema note: OpenCode 1.x (what is installed here) wants servers directly under `mcp` with `"enabled"`; the newer
+V2 docs use `mcp.servers` and `disabled`. If `opencode mcp list` reports "Configuration is invalid", run `opencode --version`
+and use the shape that its error message asks for. OpenCode also reads `.claude/skills/`, so a Claude Code install works there too.
+If you have another diagram skill globally (e.g. `diagram-design`), the model may choose either; name `diagram-author` in the prompt
+or use `/diagram`.
+
 ## Tools
 
 | Tool | Purpose |
