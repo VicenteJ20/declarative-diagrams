@@ -58,6 +58,45 @@ If the agent (or the `dgm` tools) does not show up in the desktop app:
 
 Note that V2 ignores a few V1 fields (e.g. `temperature` in the agent file); they are harmless.
 
+#### Why the agent/skill may not show up: the *location* (project folder)
+
+OpenCode resolves agents, skills, commands and MCP servers **per location** (the folder a session is opened in). A session
+opened without a project is at your user folder, where only **global** definitions exist (`~/.config/opencode/{skills,agents}`).
+The project's `.opencode/agents/` and `skills/` are only visible in sessions opened in `diagrams-maker/`. You can check what a
+location sees with the desktop CLI:
+
+```powershell
+$cli = (Get-ChildItem "$env:APPDATAi.opencode.desktop\cli\*\opencode-cli.exe" | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+& $cli api skill.list -H "x-opencode-directory:C:\path	o\project"     # ids of the skills that location sees
+& $cli api agent.list -H "x-opencode-directory:C:\path	o\project"
+```
+
+(the first query for a location may return empty while it loads; ask again after a couple of seconds.)
+
+#### Make it available in every project (global install)
+
+```powershell
+node packages/cli/dist/index.js skill install --target opencode --global   # ~/.config/opencode/skills/diagram-author
+node packages/cli/dist/index.js agent install --global                     # ~/.config/opencode/agents/diagram-specialist.md
+```
+
+and add the server to `~/.config/opencode/opencode.jsonc` (no `--root`: it works in the folder OpenCode opens; `DGM_ICONS_DIR`
+points at the icon store so the official Azure/AWS icons are found from any project):
+
+```jsonc
+"mcp": {
+  "dgm": {
+    "type": "local",
+    "command": ["node", "C:\path\to\diagrams-maker\packages\mcp\dist\index.js"],
+    "environment": { "DGM_ICONS_DIR": "C:\path\to\diagrams-maker\.dgm\icons" },
+    "enabled": true
+  }
+}
+```
+
+A project's own `opencode.json` entry with the same name (like this repo's) takes precedence over the global one. The absolute paths
+break if you move the repo. Then run the reload command above (or restart the app).
+
 ### The agent: `diagram-specialist`
 
 [`.opencode/agents/diagram-specialist.md`](../.opencode/agents/diagram-specialist.md) is a **primary agent** you talk to directly
