@@ -1,18 +1,22 @@
 # icons-inbox
 
-Drop the **official icon zips** here, then run:
+One folder per icon pack — **the folder name is the pack id**. Drop the official zips inside, then run:
 
 ```
 dgm icons update
 ```
 
-It detects whether each zip is Azure or AWS, extracts the icons to `.dgm/icons/<azure|aws>/`, and **deletes the zip**
-(use `--keep` to keep it). Zips it does not recognise are left untouched.
+```
+icons-inbox/
+  azure/   Azure_Public_Service_Icons_V25.zip     -> az-<name>
+  aws/     Asset-Package_07312025.….zip           -> aws-<name>
+  gcp/     any-zip-of-svgs.zip                    -> gcp-<name>   (any other folder name works the same way)
+```
 
-Download them yourself from the official pages (read their terms):
+Each zip is extracted to `.dgm/icons/<pack>/` and then **deleted** (`--keep` keeps it). A zip that does not look right
+is left untouched and reported. Drop newer zips and run it again to refresh a pack (newest wins).
 
-- Azure — https://learn.microsoft.com/azure/architecture/icons/  ("Download SVG icons")
-- AWS — https://aws.amazon.com/architecture/icons/  ("Asset Package")
+Official downloads (read their terms): Azure — https://learn.microsoft.com/azure/architecture/icons/ ·
+AWS — https://aws.amazon.com/architecture/icons/
 
-Everything in this folder except this file is git-ignored: the official icons are never committed.
-Run the same command again whenever you want to refresh them with a newer release.
+Everything here except this README is git-ignored: the official icons are never committed.

@@ -26,26 +26,42 @@ repo is not clearly allowed, so this project ships **none**. You import the offi
 
 1. Download the Azure icons (<https://learn.microsoft.com/azure/architecture/icons/>) and/or the AWS icons
    (<https://aws.amazon.com/architecture/icons/>) — read their terms. Both come as a `.zip`.
-2. Drop the zips in **`icons-inbox/`** (at the project root) and run:
+2. Drop each zip in **`icons-inbox/<pack>/`** — the folder name is the pack id — and run `dgm icons update`:
 
 ```
-dgm icons update          # detects Azure vs AWS, extracts to .dgm/icons/, deletes each zip (--keep to keep it)
+icons-inbox/
+  azure/  Azure_Public_Service_Icons_V25.zip     -> az-<name>
+  aws/    Asset-Package_07312025.….zip           -> aws-<name>
+  gcp/    any-zip-of-svgs.zip                    -> gcp-<name>   (any other folder = a generic pack: every svg is an icon)
+```
+
+```
+dgm icons update          # extracts each zip to .dgm/icons/<pack>/ and deletes it (--keep to keep it)
 dgm icons packs           # what is installed
 dgm icons search app      # find names:  az-app-services, aws-app-runner …
 ```
 
-To refresh with a newer release, drop the new zips and run `dgm icons update` again (oldest zip first, newest wins;
-a bad or unrecognised zip is left untouched). Everything in `icons-inbox/` except its README is git-ignored.
-`dgm icons sync azure|aws --from <zip|folder|url>` does the same for one explicit source and keeps the zip.
+To refresh a pack, drop the newer zip in its folder and run it again (oldest first, newest wins; a zip that does not
+look like its pack is reported and left untouched). Loose zips directly in `icons-inbox/` are auto-detected as Azure or AWS.
+Everything in `icons-inbox/` except its README is git-ignored.
+`dgm icons sync <pack> --from <zip|folder|url>` does the same for one explicit source and keeps the zip.
 
 Files go to `.dgm/icons/<azure|aws>/` (searched upwards from the project, or `DGM_ICONS_DIR`, or `iconsDir` in
 `dgm.config.json`). `.dgm/` is in `.gitignore`.
 
+**What gets imported** (checked against Azure V25 — 651 icons — and the AWS Asset Package 07312025 — 777 icons):
+- Azure: every `…icon-service-<Name>.svg` → `az-<name>`.
+- AWS: the 64 px **service** icons → `aws-<name>`; **category** icons → `aws-category-<name>`; the **group** icons used for
+  containers (`aws-account`, `aws-cloud`, `aws-region`, `aws-virtual-private-cloud-vpc`, `aws-public-subnet`,
+  `aws-private-subnet`, `aws-auto-scaling-group`, `aws-corporate-data-center`…); and the 48 px **resource** icons →
+  `aws-res-<name>` (e.g. `aws-res-vpc-nat-gateway`). Dark variants and macOS `__MACOSX` files are ignored.
+
 **Names.** Slugs come from the official file names, lower-cased (`10035-icon-service-App-Services.svg` → `az-app-services`,
 `Arch_AWS-Lambda_64.svg` → `aws-lambda`; a leading `Azure-`, `Amazon-` or `AWS-` is dropped, the full name still works).
-Short aliases are built in (`az-webapp`, `az-vm`, `az-sql`, `az-aks`, `az-keyvault`, `az-vnet`, `aws-s3`, `aws-ec2`,
-`aws-rds`, `aws-vpc`… — `dgm icons aliases azure|aws`). A wrong name fails with suggestions
-(`unknown Azure icon "webap" — did you mean az-webapp?`).
+Short aliases are built in and take priority over an exact name (`az-sql` = SQL Database): `az-webapp`, `az-vm`, `az-aks`,
+`az-keyvault`, `az-vnet`, `aws-s3`, `aws-ec2`, `aws-rds`, `aws-vpc`, `aws-nat`… (`dgm icons aliases azure|aws`; all of them
+resolve against the packs above). Azure V25 has no "Microsoft Entra ID" icon — only the `az-entra-*` sub-services.
+A wrong name fails with suggestions (`unknown Azure icon "webap" — did you mean az-webapp?`).
 
 **CI / deployment.** The build needs the packs too. Either add a step before the build
 (`dgm icons sync azure --from $AZURE_ICONS_URL`, a private URL you control), or let the build degrade:

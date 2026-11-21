@@ -60,13 +60,25 @@ describe("icon file-name rules", () => {
     expect(slugFor("aws", "A/Arch_Amazon-Simple-Storage-Service_64.svg")?.primary).toBe("simple-storage-service");
     expect(slugFor("aws", "A/Arch_AWS-Lambda_48.svg")).toBeNull();
     expect(slugFor("aws", "R/Res_Amazon-EC2_Instance_64.svg")).toBeNull();
+    expect(slugFor("aws", "__MACOSX/A/._Arch_AWS-Lambda_64.svg")).toBeNull();
+  });
+  it("aws: group icons (containers) and resource icons are included; dark variants are not", () => {
+    expect(slugFor("aws", "Architecture-Group-Icons_x/AWS-Account_32.svg")).toEqual({ primary: "account", full: "aws-account" });
+    expect(slugFor("aws", "Architecture-Group-Icons_x/Public-subnet_32.svg")?.primary).toBe("public-subnet");
+    expect(slugFor("aws", "Architecture-Group-Icons_x/AWS-Cloud_32_Dark.svg")).toBeNull();
+    expect(slugFor("aws", "Resource-Icons_x/Res_Networking/Res_Amazon-VPC_NAT-Gateway_48.svg")).toEqual({ primary: "res-vpc-nat-gateway", full: "res-amazon-vpc-nat-gateway" });
+    expect(slugFor("aws", "Resource-Icons_x/Res_Networking/Res_Amazon-VPC_NAT-Gateway_48_Dark.svg")).toBeNull();
+  });
+  it("generic packs ignore macOS metadata", () => {
+    expect(slugFor("gcp", "__MACOSX/icons/._Compute Engine.svg")).toBeNull();
+    expect(slugFor("gcp", "icons/Compute Engine.svg")?.primary).toBe("compute-engine");
   });
 });
 
 describe("resolving icons", () => {
   it("syncs only service icons, writing an index", () => {
     expect(listIcons("az").map((i) => i.ref)).toEqual(["az-app-services", "az-cosmos-db", "az-virtual-machine"]);
-    expect(listIcons("aws").map((i) => i.ref)).toEqual(["aws-lambda", "aws-simple-storage-service"]);
+    expect(listIcons("aws").map((i) => i.ref)).toEqual(["aws-lambda", "aws-res-ec2-instance", "aws-simple-storage-service"]);
     expect(existsSync(join(dest, "azure", "index.json"))).toBe(true);
   });
 
@@ -102,7 +114,7 @@ describe("resolving icons", () => {
     configureIcons({ root: empty, custom: [] });
     const missing = resolveIcon("az-webapp");
     expect(missing.ok).toBe(false);
-    expect(missing.ok ? "" : missing.error).toMatch(/dgm icons sync azure/);
+    expect(missing.ok ? "" : missing.error).toMatch(/dgm icons update/);
     rmSync(empty, { recursive: true, force: true });
     configureIcons({ root: tmp, iconsDir: dest, custom: [] });
   });
@@ -195,5 +207,34 @@ describe("inbox import", () => {
     expect(existsSync(join(inbox, "azure2.zip"))).toBe(true);
     rmSync(inbox, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });
+  });
+});
+
+describe("inbox: folder name is the pack", () => {
+  it("imports icons-inbox/<pack>/*.zip, including generic packs like gcp, and resolves them by prefix", async () => {
+    const { importInbox } = await import("./index.js");
+    const inbox = mkdtempSync(join(tmpdir(), "dgm-inbox2-"));
+    const out = join(inbox, "out");
+    for (const d of ["azure", "aws", "gcp"]) mkdirSync(join(inbox, d));
+    writeFileSync(join(inbox, "azure", "Azure_Public_Service_Icons_V99.zip"), zipSync({ "Azure_Public_Service_Icons/Icons/compute/10021-icon-service-Virtual-Machine.svg": strToU8(gradient("#50e6ff")) }));
+    writeFileSync(join(inbox, "aws", "Asset-Package_x.zip"), zipSync({ "Architecture-Service-Icons_x/Arch_Compute/64/Arch_AWS-Lambda_64.svg": strToU8(flat("#ed7100")) }));
+    writeFileSync(join(inbox, "gcp", "gcp-icons.zip"), zipSync({ "icons/Compute Engine.svg": strToU8(flat("#4285f4")), "icons/readme.txt": strToU8("x") }));
+    writeFileSync(join(inbox, "aws", "wrong.zip"), zipSync({ "just-a-logo.svg": strToU8(flat("#000")) })); // not an AWS package
+
+    const r = importInbox(inbox, out);
+    const by = Object.fromEntries(r.map((x) => [x.file, x]));
+    expect(by["azure/Azure_Public_Service_Icons_V99.zip"]).toMatchObject({ status: "imported", pack: "azure", count: 1 });
+    expect(by["aws/Asset-Package_x.zip"]).toMatchObject({ status: "imported", pack: "aws" });
+    expect(by["gcp/gcp-icons.zip"]).toMatchObject({ status: "imported", pack: "gcp", count: 1 });
+    expect(by["aws/wrong.zip"].status).toBe("error"); // left in place, nothing overwritten
+    expect(existsSync(join(inbox, "aws", "wrong.zip"))).toBe(true);
+    expect(existsSync(join(inbox, "gcp", "gcp-icons.zip"))).toBe(false);
+
+    configureIcons({ root: inbox, iconsDir: out, custom: [] });
+    expect(resolveIcon("gcp-compute-engine")).toMatchObject({ ok: true, pack: "gcp" });
+    expect(listIcons("gcp").map((i) => i.ref)).toEqual(["gcp-compute-engine"]);
+    expect(resolveIcon("az-vm")).toMatchObject({ ok: true });
+    configureIcons({ root: process.cwd(), custom: [] });
+    rmSync(inbox, { recursive: true, force: true });
   });
 });

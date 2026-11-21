@@ -23,6 +23,7 @@ import {
   listAliases,
   resolveIcon,
   OFFICIAL_URL,
+  syncedPacks,
   type OfficialPack,
   type Mode,
   type ThemeDef,
@@ -39,8 +40,8 @@ Usage:
   dgm kinds                         List known node kinds
 
   dgm icons update [--keep] [--inbox icons-inbox]
-                                    Import every official zip you dropped in icons-inbox/ (Azure or AWS is auto-detected),
-                                    extract to .dgm/icons and delete the zip
+                                    Import the zips in icons-inbox/<pack>/ (azure, aws, gcp… — the folder name is the pack),
+                                    extract to .dgm/icons/<pack> and delete each zip
   dgm icons sync <azure|aws> --from <zip|folder|url> [--dest .dgm/icons]
                                     Same, for one explicit file/folder/URL (zip is kept)
   dgm icons search <text> [--pack az|aws|lu|<prefix>]   Find icon names
@@ -142,8 +143,10 @@ async function iconsCmd(args: string[]) {
       const results = importInbox(inbox, flag(rest, "--dest") ?? destDefault, { keep: rest.includes("--keep") });
       if (!results.length) {
         console.log(`No zips found in ${inbox}.`);
-        console.log(`Drop the official packages there and run this again:`);
-        for (const pk of ["azure", "aws"] as OfficialPack[]) console.log(`  ${pk}: ${OFFICIAL_URL[pk]}`);
+        console.log(`Drop each zip in a folder named after its pack and run this again:`);
+        console.log(`  icons-inbox/azure/   ${OFFICIAL_URL.azure}`);
+        console.log(`  icons-inbox/aws/     ${OFFICIAL_URL.aws}`);
+        console.log(`  icons-inbox/<other>/ any other pack, e.g. gcp (every svg becomes <other>-<file-name>)`);
         break;
       }
       let failed = 0;
@@ -160,7 +163,7 @@ async function iconsCmd(args: string[]) {
     }
     case "sync": {
       const pack = rest[0] as OfficialPack;
-      if (pack !== "azure" && pack !== "aws") throw new Error("usage: dgm icons sync <azure|aws> --from <zip|folder|url>");
+      if (!pack || pack.startsWith("-")) throw new Error("usage: dgm icons sync <pack> --from <zip|folder|url>   (pack: azure, aws, gcp…)");
       const from = flag(rest, "--from");
       if (!from)
         throw new Error(`missing --from. Download the official package from ${OFFICIAL_URL[pack]} and pass the .zip (or the extracted folder).`);
@@ -189,13 +192,14 @@ async function iconsCmd(args: string[]) {
       break;
     }
     case "packs": {
+      const have = new Set(syncedPacks());
       for (const [pre, pk] of [["az", "azure"], ["aws", "aws"]] as const) {
-        const r = resolveIcon(`${pre}-x`);
         const n = listIcons(pre).length;
-        console.log(`${pre.padEnd(4)} ${pk.padEnd(7)} ${n ? `${n} icons` : "not synced"}`);
-        void r;
+        console.log(`${pre.padEnd(5)} ${pk.padEnd(8)} ${n ? `${n} icons` : `not synced (icons-inbox/${pk}/ + dgm icons update)`}`);
+        have.delete(pk);
       }
-      console.log(`lu   lucide  ${listIcons("lu").length} icons (bundled)`);
+      for (const pk of have) console.log(`${pk.padEnd(5)} ${pk.padEnd(8)} ${listIcons(pk).length} icons`);
+      console.log(`lu    lucide   ${listIcons("lu").length} icons (bundled)`);
       break;
     }
     case "aliases":

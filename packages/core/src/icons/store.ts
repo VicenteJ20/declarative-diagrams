@@ -13,7 +13,7 @@ export interface CustomPack {
 }
 
 export interface PackIndex {
-  pack: "azure" | "aws";
+  pack: string;
   source?: string;
   syncedAt?: string;
   /** primary slug -> file name */
@@ -22,14 +22,18 @@ export interface PackIndex {
   alt?: Record<string, string>;
 }
 
-export type OfficialPack = "azure" | "aws";
+/** A synced pack = a folder under `.dgm/icons/` with an index.json. `azure` and `aws` have special rules; any other name (gcp…) is generic. */
+export type OfficialPack = string;
 
 const PREFIX: Record<string, string> = { az: "azure", aws: "aws", lu: "lucide" };
-export const OFFICIAL_URL: Record<OfficialPack, string> = {
+/** Reference prefix of a synced pack (default: the pack name itself, e.g. `gcp-compute-engine`). */
+const PACK_PREFIX: Record<string, string> = { azure: "az", aws: "aws" };
+const LABEL: Record<string, string> = { azure: "Azure", aws: "AWS" };
+export const OFFICIAL_URL: Record<string, string> = {
   azure: "https://learn.microsoft.com/azure/architecture/icons/",
   aws: "https://aws.amazon.com/architecture/icons/",
 };
-const ALIASES: Record<OfficialPack, Record<string, string[]>> = { azure: azureAliases, aws: awsAliases };
+const ALIASES: Record<string, Record<string, string[]>> = { azure: azureAliases, aws: awsAliases };
 
 const state = { root: process.cwd(), iconsDir: undefined as string | undefined, custom: [] as CustomPack[] };
 const cache = new Map<string, unknown>();
@@ -55,6 +59,17 @@ export function iconsDirs(): string[] {
     d = up;
   }
   return out;
+}
+
+/** Packs present under any icons dir (folders with an index.json): azure, aws, gcp… */
+export function syncedPacks(): string[] {
+  const out = new Set<string>();
+  for (const base of iconsDirs()) {
+    if (!existsSync(base)) continue;
+    for (const d of readdirSync(base, { withFileTypes: true }))
+      if (d.isDirectory() && existsSync(join(base, d.name, "index.json"))) out.add(d.name);
+  }
+  return [...out].sort();
 }
 
 export function loadIndex(pack: OfficialPack): { index: PackIndex; dir: string } | null {
@@ -98,6 +113,8 @@ export function parseIconRef(ref: string): { prefix: string; name: string } | nu
 /** Pack a ref's prefix belongs to (cheap; no fs): "azure" | "aws" | "lucide" | custom prefix | null. */
 export function packOfPrefix(prefix: string): string | null {
   if (PREFIX[prefix]) return PREFIX[prefix];
+  const syn = syncedPacks().find((pk) => (PACK_PREFIX[pk] ?? pk) === prefix);
+  if (syn) return syn;
   return state.custom.some((c) => c.prefix === prefix) ? prefix : null;
 }
 
@@ -122,7 +139,7 @@ function suggest(name: string, names: string[], prefix: string): string[] {
 function allNames(pack: OfficialPack): string[] {
   const l = loadIndex(pack);
   if (!l) return [];
-  return [...Object.keys(l.index.icons), ...Object.keys(ALIASES[pack])];
+  return [...Object.keys(l.index.icons), ...Object.keys(ALIASES[pack] ?? {})];
 }
 
 export function resolveIcon(ref: string): IconResult {
@@ -141,17 +158,19 @@ export function resolveIcon(ref: string): IconResult {
       : { ok: false, ref, error: `unknown Lucide icon "${p.name}"`, suggestions: suggest(p.name, lucideNames(), "lu") };
   }
 
-  if (pack === "azure" || pack === "aws") {
+  if (!state.custom.some((c) => c.prefix === pack)) {
     const l = loadIndex(pack);
-    const short = pack === "azure" ? "az" : "aws";
+    const short = PACK_PREFIX[pack] ?? pack;
+    const label = LABEL[pack] ?? pack;
     if (!l)
       return {
         ok: false,
         ref,
-        error: `${pack === "azure" ? "Azure" : "AWS"} icons are not installed. Download the official package from ${OFFICIAL_URL[pack]} and run: dgm icons sync ${pack} --from <zip|folder>`,
+        error: `${label} icons are not installed.${OFFICIAL_URL[pack] ? ` Download the official package from ${OFFICIAL_URL[pack]},` : ""} drop the zip in icons-inbox/${pack}/ and run: dgm icons update`,
         suggestions: [],
       };
-    const cands = [p.name, ...(ALIASES[pack][p.name] ?? [])];
+    // curated aliases first (az-sql = SQL Database), then the exact slug
+    const cands = [...((ALIASES[pack] ?? {})[p.name] ?? []), p.name];
     for (const c of cands) {
       const slug = l.index.icons[c] ? c : l.index.alt?.[c];
       if (slug && l.index.icons[slug]) {
@@ -164,7 +183,7 @@ export function resolveIcon(ref: string): IconResult {
         return { ok: true, ref, pack, slug, data };
       }
     }
-    return { ok: false, ref, error: `unknown ${pack === "azure" ? "Azure" : "AWS"} icon "${p.name}"`, suggestions: suggest(p.name, allNames(pack), short) };
+    return { ok: false, ref, error: `unknown ${label} icon "${p.name}"`, suggestions: suggest(p.name, allNames(pack), short) };
   }
 
   const cp = state.custom.find((c) => c.prefix === pack)!;
@@ -192,6 +211,7 @@ export function listIcons(prefix?: string): IconListing[] {
   const want = (pre: string) => !prefix || prefix === pre;
   if (want("az")) add("azure", "az", Object.keys(loadIndex("azure")?.index.icons ?? {}).sort());
   if (want("aws")) add("aws", "aws", Object.keys(loadIndex("aws")?.index.icons ?? {}).sort());
+  for (const pk of syncedPacks()) if (!["azure", "aws"].includes(pk) && want(pk)) add(pk, pk, Object.keys(loadIndex(pk)?.index.icons ?? {}).sort());
   if (want("lu")) add("lucide", "lu", lucideNames());
   for (const c of state.custom) if (want(c.prefix)) add(c.prefix, c.prefix, Object.keys(customIndex(c)).sort());
   return out;
@@ -199,5 +219,5 @@ export function listIcons(prefix?: string): IconListing[] {
 
 /** Short names (aliases) that resolve for an official pack, e.g. `az-webapp`. */
 export function listAliases(pack: OfficialPack): string[] {
-  return Object.keys(ALIASES[pack]).sort();
+  return Object.keys(ALIASES[pack] ?? {}).sort();
 }

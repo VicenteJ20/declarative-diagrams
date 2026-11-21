@@ -9,30 +9,46 @@ interface Entry {
   data: string;
 }
 
-/** Slug rules for the official file names. Returns null for files that are not service icons. */
-export function slugFor(pack: OfficialPack, path: string): { primary: string; full: string } | null {
+/** Slug rules for the official file names. Returns null for files that are not icons of the pack. */
+export function slugFor(pack: string, path: string): { primary: string; full: string } | null {
   const file = basename(path);
   if (!/\.svg$/i.test(file)) return null;
+  if (/(^|\/)__MACOSX\//.test(path) || file.startsWith(".")) return null; // macOS zip metadata
+
+  if (pack !== "azure" && pack !== "aws") {
+    // generic pack (gcp…): every svg is an icon, named after its file
+    const full = slugify(file.replace(/\.svg$/i, ""));
+    return full ? { primary: full, full } : null;
+  }
+
   let name: string;
+  let prefix = "";
   if (pack === "azure") {
     // 10035-icon-service-App-Services.svg
     const m = /icon-service-(.+)\.svg$/i.exec(file);
     if (!m) return null;
     name = m[1];
   } else {
-    // Arch_AWS-Lambda_64.svg · Arch-Category_Compute_64.svg   (only the 64px architecture icons)
-    if (/(^|\/)Res_/i.test(path)) return null;
-    const m = /^(Arch(?:-Category)?)_(.+?)_64\.svg$/i.exec(file);
-    if (!m) return null;
-    name = (m[1].toLowerCase().includes("category") ? "Category-" : "") + m[2];
+    let m: RegExpExecArray | null;
+    if ((m = /^(Arch(?:-Category)?)_(.+?)_64\.svg$/i.exec(file))) {
+      // Arch_AWS-Lambda_64.svg · Arch-Category_Compute_64.svg   (service + category icons, 64px)
+      name = (m[1].toLowerCase().includes("category") ? "Category-" : "") + m[2];
+    } else if (/Group-Icons/i.test(path) && (m = /^(.+?)_32\.svg$/i.exec(file))) {
+      // Architecture-Group-Icons/AWS-Account_32.svg · Public-subnet_32.svg   (containers: account, VPC, subnet…)
+      name = m[1];
+    } else if ((m = /^Res_(.+?)_48\.svg$/i.exec(file))) {
+      // Resource-Icons/…/Res_Amazon-VPC_NAT-Gateway_48.svg   -> aws-res-vpc-nat-gateway
+      name = m[1];
+      prefix = "res-";
+    } else return null;
   }
-  const full = slugify(name);
-  const primary = full.replace(pack === "azure" ? /^azure-/ : /^(amazon|aws)-/, "") || full;
-  return { primary, full };
+  const slug = slugify(name);
+  const stripped = slug.replace(pack === "azure" ? /^azure-/ : /^(amazon|aws)-/, "") || slug;
+  return { primary: prefix + stripped, full: prefix + slug };
 }
 
 function zipEntries(buf: Uint8Array): Entry[] {
-  const files = unzipSync(buf, { filter: (f) => /\.svg$/i.test(f.name) });
+  const files = unzipSync(buf, { filter: (f) => /\.svg$/i.test(f.name) && !/(^|\/)(__MACOSX\/|\.)/.test(f.name) });
   return Object.entries(files).map(([path, u8]) => ({ path: path.replace(/\\/g, "/"), data: Buffer.from(u8).toString("utf8") }));
 }
 
@@ -43,14 +59,14 @@ function dirEntries(dir: string): Entry[] {
 }
 
 /** Which official pack a set of files is (Azure: `…icon-service-…svg`; AWS: `Arch_…_64.svg`), or null. */
-export function detectPack(entries: { path: string }[]): OfficialPack | null {
+export function detectPack(entries: { path: string }[]): string | null {
   const az = entries.filter((e) => slugFor("azure", e.path)).length;
   const aws = entries.filter((e) => slugFor("aws", e.path)).length;
   if (!az && !aws) return null;
   return az >= aws ? "azure" : "aws";
 }
 
-function writePack(pack: OfficialPack, entries: Entry[], source: string, dest: string) {
+function writePack(pack: string, entries: Entry[], source: string, dest: string) {
   const dir = resolve(dest, pack);
   const index: PackIndex = { pack, source, syncedAt: new Date().toISOString(), icons: {}, alt: {} };
   const files: [string, string][] = [];
@@ -99,40 +115,54 @@ export async function syncPack(pack: OfficialPack, from: string, dest = ".dgm/ic
 }
 
 export interface InboxResult {
+  /** Path relative to the inbox, e.g. `azure/Azure_Public_Service_Icons_V25.zip`. */
   file: string;
   status: "imported" | "skipped" | "error";
-  pack?: OfficialPack;
+  pack?: string;
   count?: number;
   deleted?: boolean;
   message?: string;
 }
 
 /**
- * Process every `.zip` dropped in the inbox folder: detect Azure vs AWS from the contents, extract into
- * `<dest>/<pack>/`, then delete the zip (unless `keep`). Oldest first, so the newest zip of a pack wins.
- * Zips that are not recognised, or that fail, are left untouched.
+ * Process the zips in the inbox folder and extract them into `<dest>/<pack>/`, then delete each zip (unless `keep`).
+ *
+ *   icons-inbox/azure/*.zip   -> pack "azure"      (the folder name IS the pack id)
+ *   icons-inbox/aws/*.zip     -> pack "aws"
+ *   icons-inbox/gcp/*.zip     -> pack "gcp"        (any other folder: generic pack, every svg is an icon)
+ *   icons-inbox/*.zip         -> loose zips: Azure or AWS is detected from the contents
+ *
+ * Oldest zip first, so the newest of a pack wins. Zips that fail or are not recognised are left untouched.
  */
 export function importInbox(inbox: string, dest = ".dgm/icons", opts: { keep?: boolean } = {}): InboxResult[] {
-  const dir = resolve(inbox);
-  if (!existsSync(dir)) return [];
-  const zips = readdirSync(dir)
-    .filter((f) => /\.zip$/i.test(f))
-    .map((f) => ({ f, p: join(dir, f), t: statSync(join(dir, f)).mtimeMs }))
-    .sort((a, b) => a.t - b.t);
+  const root = resolve(inbox);
+  if (!existsSync(root)) return [];
+  const jobs: { rel: string; abs: string; pack?: string; t: number }[] = [];
+  const zipsIn = (dir: string, pack?: string) => {
+    for (const f of readdirSync(dir)) {
+      const abs = join(dir, f);
+      if (/\.zip$/i.test(f) && statSync(abs).isFile()) jobs.push({ rel: pack ? `${pack}/${f}` : f, abs, pack, t: statSync(abs).mtimeMs });
+    }
+  };
+  zipsIn(root);
+  for (const d of readdirSync(root, { withFileTypes: true }))
+    if (d.isDirectory() && !d.name.startsWith(".")) zipsIn(join(root, d.name), slugify(d.name));
+  jobs.sort((a, b) => a.t - b.t);
+
   const out: InboxResult[] = [];
-  for (const z of zips) {
+  for (const j of jobs) {
     try {
-      const entries = zipEntries(readFileSync(z.p));
-      const pack = detectPack(entries);
+      const entries = zipEntries(readFileSync(j.abs));
+      const pack = j.pack ?? detectPack(entries);
       if (!pack) {
-        out.push({ file: z.f, status: "skipped", message: "not an Azure or AWS architecture icon package (no service icons found); left in place" });
+        out.push({ file: j.rel, status: "skipped", message: "not recognised as an Azure or AWS package; move it to icons-inbox/<pack>/ (e.g. azure, aws, gcp). Left in place" });
         continue;
       }
-      const r = writePack(pack, entries, z.f, dest);
-      if (!opts.keep) rmSync(z.p, { force: true });
-      out.push({ file: z.f, status: "imported", pack, count: r.count, deleted: !opts.keep });
+      const r = writePack(pack, entries, j.rel, dest);
+      if (!opts.keep) rmSync(j.abs, { force: true });
+      out.push({ file: j.rel, status: "imported", pack, count: r.count, deleted: !opts.keep });
     } catch (e) {
-      out.push({ file: z.f, status: "error", message: (e as Error).message });
+      out.push({ file: j.rel, status: "error", message: (e as Error).message });
     }
   }
   return out;

@@ -1,22 +1,38 @@
-# Needs the official AWS icons synced locally:  dgm icons sync aws --from <zip|folder>
+# Needs the official AWS icons: drop the zip in icons-inbox/aws/ and run `dgm icons update`
 type: architecture
-title: Serverless API on AWS — official icons
+title: Containerised API on AWS — official icons
 nodes:
   - { id: users, label: Users, icon: lu-users }
   - { id: cdn, label: CloudFront, icon: aws-cloudfront }
   - id: acct
     label: production
     kind: aws.account
+    icon: aws-account
     children:
-      - { id: alb, label: Load balancer, icon: aws-alb }
-      - { id: ecs, label: API service, sublabel: ECS Fargate, icon: aws-ecs }
-      - { id: fn, label: Worker, icon: aws-lambda }
-      - { id: db, label: Orders, icon: aws-rds }
+      - id: vpc
+        label: vpc-main
+        kind: aws.vpc
+        icon: aws-vpc-group
+        children:
+          - id: pub
+            label: public subnet
+            kind: aws.subnet
+            icon: aws-public-subnet
+            children:
+              - { id: alb, label: Load balancer, icon: aws-alb }
+              - { id: nat, label: NAT, icon: aws-nat }
+          - id: priv
+            label: private subnet
+            kind: aws.subnet
+            icon: aws-private-subnet
+            children:
+              - { id: ecs, label: API service, sublabel: ECS Fargate, icon: aws-ecs }
+              - { id: db, label: Orders, icon: aws-rds }
       - { id: s3, label: Exports, icon: aws-s3 }
 edges:
   - { from: users, to: cdn, label: HTTPS, flow: true }
   - { from: cdn, to: alb, flow: true }
   - { from: alb, to: ecs, flow: true }
   - { from: ecs, to: db }
-  - { from: ecs, to: fn, style: dashed }
-  - { from: fn, to: s3, style: dashed }
+  - { from: ecs, to: nat, style: dashed }
+  - { from: ecs, to: s3, style: dashed }

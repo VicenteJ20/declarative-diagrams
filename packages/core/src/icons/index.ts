@@ -2,7 +2,7 @@ import type { NodeSpec } from "../spec.js";
 import { prefixIds, IconData } from "./sanitize.js";
 import { resolveIcon, parseIconRef, IconResult } from "./store.js";
 
-export { resolveIcon, parseIconRef, configureIcons, listIcons, listAliases, packOfPrefix, OFFICIAL_URL } from "./store.js";
+export { resolveIcon, parseIconRef, configureIcons, listIcons, listAliases, packOfPrefix, syncedPacks, OFFICIAL_URL } from "./store.js";
 export type { IconResult, CustomPack, OfficialPack } from "./store.js";
 export { syncPack, importInbox, detectPack } from "./sync.js";
 export type { InboxResult } from "./sync.js";
