@@ -23,3 +23,8 @@ Thumbs.db
 
 # local icon cache (official Azure/AWS packs are never committed)
 .dgm/
+
+# official icon zips dropped for `dgm icons update` (never committed)
+icons-inbox/*
+!icons-inbox/README.md
+!icons-inbox/.gitkeep

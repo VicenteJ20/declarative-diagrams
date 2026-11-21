@@ -168,3 +168,32 @@ describe("rendering with icons", () => {
     expect(readFileSync).toBeTruthy();
   });
 });
+
+describe("inbox import", () => {
+  it("detects Azure vs AWS zips, extracts them, deletes the zips, and leaves unknown ones", async () => {
+    const { importInbox, detectPack } = await import("./index.js");
+    const inbox = mkdtempSync(join(tmpdir(), "dgm-inbox-"));
+    const out = mkdtempSync(join(tmpdir(), "dgm-out-"));
+    writeFileSync(join(inbox, "azure.zip"), zipSync({ "Icons/10035-icon-service-App-Services.svg": strToU8(gradient("#0078d4")) }));
+    writeFileSync(join(inbox, "aws.zip"), zipSync({ "A/Arch_AWS-Lambda_64.svg": strToU8(flat("#ed7100")) }));
+    writeFileSync(join(inbox, "other.zip"), zipSync({ "readme.svg": strToU8(flat("#000")) }));
+    writeFileSync(join(inbox, "notes.txt"), "ignored");
+
+    expect(detectPack([{ path: "x/Arch_AWS-Lambda_64.svg" }])).toBe("aws");
+    const r = importInbox(inbox, out);
+    const by = Object.fromEntries(r.map((x) => [x.file, x]));
+    expect(by["azure.zip"]).toMatchObject({ status: "imported", pack: "azure", count: 1, deleted: true });
+    expect(by["aws.zip"]).toMatchObject({ status: "imported", pack: "aws", count: 1 });
+    expect(by["other.zip"].status).toBe("skipped");
+    expect(existsSync(join(inbox, "azure.zip"))).toBe(false);
+    expect(existsSync(join(inbox, "other.zip"))).toBe(true);
+    expect(existsSync(join(out, "azure", "index.json"))).toBe(true);
+
+    // --keep keeps the zip
+    writeFileSync(join(inbox, "azure2.zip"), zipSync({ "Icons/10035-icon-service-App-Services.svg": strToU8(gradient("#0078d4")) }));
+    expect(importInbox(inbox, out, { keep: true }).find((x) => x.file === "azure2.zip")?.deleted).toBe(false);
+    expect(existsSync(join(inbox, "azure2.zip"))).toBe(true);
+    rmSync(inbox, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  });
+});

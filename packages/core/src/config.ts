@@ -14,6 +14,8 @@ export interface ProjectConfig {
   icons?: { prefix: string; dir: string; monochrome?: boolean }[];
   /** Where synced official packs live (default: `.dgm/icons`, searched upwards). */
   iconsDir?: string;
+  /** Folder where you drop the official icon zips for `dgm icons update` (default: `icons-inbox`). */
+  iconsInbox?: string;
 }
 
 export interface LoadedConfig {

@@ -18,6 +18,7 @@ import {
   parseThemeDef,
   applyVariant,
   syncPack,
+  importInbox,
   listIcons,
   listAliases,
   resolveIcon,
@@ -37,8 +38,11 @@ Usage:
   dgm schema                        Print the JSON Schema of the spec
   dgm kinds                         List known node kinds
 
+  dgm icons update [--keep] [--inbox icons-inbox]
+                                    Import every official zip you dropped in icons-inbox/ (Azure or AWS is auto-detected),
+                                    extract to .dgm/icons and delete the zip
   dgm icons sync <azure|aws> --from <zip|folder|url> [--dest .dgm/icons]
-                                    Import the official icon package (local only, never committed)
+                                    Same, for one explicit file/folder/URL (zip is kept)
   dgm icons search <text> [--pack az|aws|lu|<prefix>]   Find icon names
   dgm icons list [--pack …] | packs | aliases <azure|aws>
 
@@ -130,15 +134,37 @@ const SAMPLE: DiagramSpec = {
 
 async function iconsCmd(args: string[]) {
   const [sub, ...rest] = args;
-  loadConfig();
+  const cfg = loadConfig();
+  const destDefault = resolve(cfg.root, ".dgm/icons");
   switch (sub) {
+    case "update": {
+      const inbox = resolve(cfg.root, flag(rest, "--inbox") ?? cfg.config.iconsInbox ?? "icons-inbox");
+      const results = importInbox(inbox, flag(rest, "--dest") ?? destDefault, { keep: rest.includes("--keep") });
+      if (!results.length) {
+        console.log(`No zips found in ${inbox}.`);
+        console.log(`Drop the official packages there and run this again:`);
+        for (const pk of ["azure", "aws"] as OfficialPack[]) console.log(`  ${pk}: ${OFFICIAL_URL[pk]}`);
+        break;
+      }
+      let failed = 0;
+      for (const r of results) {
+        if (r.status === "imported") console.log(`✓ ${r.file} → ${r.pack} (${r.count} icons)${r.deleted ? ", zip deleted" : ", zip kept"}`);
+        else {
+          failed++;
+          console.log(`✗ ${r.file}: ${r.message}`);
+        }
+      }
+      console.log(`Icons are in ${destDefault} (git-ignored). Check them with: dgm icons packs`);
+      if (failed) process.exit(1);
+      break;
+    }
     case "sync": {
       const pack = rest[0] as OfficialPack;
       if (pack !== "azure" && pack !== "aws") throw new Error("usage: dgm icons sync <azure|aws> --from <zip|folder|url>");
       const from = flag(rest, "--from");
       if (!from)
         throw new Error(`missing --from. Download the official package from ${OFFICIAL_URL[pack]} and pass the .zip (or the extracted folder).`);
-      const r = await syncPack(pack, from, flag(rest, "--dest") ?? ".dgm/icons");
+      const r = await syncPack(pack, from, flag(rest, "--dest") ?? destDefault);
       console.log(`synced ${r.count} ${pack} icons to ${r.dir} (${r.skipped} non-service files skipped)`);
       console.log("These files stay on this machine (.dgm/ is git-ignored). Use them as az-<name> / aws-<name>.");
       break;

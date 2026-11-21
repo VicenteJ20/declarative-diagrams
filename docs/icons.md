@@ -25,15 +25,18 @@ Microsoft and AWS allow their icons in architecture diagrams and documentation, 
 repo is not clearly allowed, so this project ships **none**. You import the official download once:
 
 1. Download the Azure icons (<https://learn.microsoft.com/azure/architecture/icons/>) and/or the AWS icons
-   (<https://aws.amazon.com/architecture/icons/>) — read their terms.
-2. Import them (zip, extracted folder, or a URL you control):
+   (<https://aws.amazon.com/architecture/icons/>) — read their terms. Both come as a `.zip`.
+2. Drop the zips in **`icons-inbox/`** (at the project root) and run:
 
 ```
-dgm icons sync azure --from ~/Downloads/Azure_Public_Service_Icons_V23.zip
-dgm icons sync aws   --from ~/Downloads/Asset-Package_01302025.zip
-dgm icons packs                      # what is installed
-dgm icons search app                 # find names:  az-app-services, aws-app-runner …
+dgm icons update          # detects Azure vs AWS, extracts to .dgm/icons/, deletes each zip (--keep to keep it)
+dgm icons packs           # what is installed
+dgm icons search app      # find names:  az-app-services, aws-app-runner …
 ```
+
+To refresh with a newer release, drop the new zips and run `dgm icons update` again (oldest zip first, newest wins;
+a bad or unrecognised zip is left untouched). Everything in `icons-inbox/` except its README is git-ignored.
+`dgm icons sync azure|aws --from <zip|folder|url>` does the same for one explicit source and keeps the zip.
 
 Files go to `.dgm/icons/<azure|aws>/` (searched upwards from the project, or `DGM_ICONS_DIR`, or `iconsDir` in
 `dgm.config.json`). `.dgm/` is in `.gitignore`.
