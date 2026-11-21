@@ -1,0 +1,30 @@
+type: flow
+title: Login with optional MFA
+direction: DOWN
+nodes:
+  - { id: start, label: Usuario envía credenciales, kind: start }
+  - { id: check, label: Validar contraseña, kind: process, description: Compara el hash con argon2id; la comparación es de tiempo constante. }
+  - { id: ok, label: ¿Válida?, kind: decision }
+  - { id: mfa, label: ¿MFA activo?, kind: decision }
+  - { id: code, label: Pedir código TOTP, kind: process }
+  - { id: session, label: Crear sesión, kind: process }
+  - { id: deny, label: Rechazar, kind: end }
+  - { id: done, label: Acceso concedido, kind: end }
+edges:
+  - { from: start, to: check }
+  - { from: check, to: ok }
+  - { from: ok, to: mfa, label: sí, flow: true }
+  - { from: ok, to: deny, label: no, style: dashed }
+  - { from: mfa, to: code, label: sí }
+  - { from: mfa, to: session, label: no, flow: true }
+  - { from: code, to: session }
+  - { from: session, to: done, flow: true }
+notes:
+  - { target: check, text: Tras 5 intentos fallidos se bloquea la cuenta 15 minutos. }
+steps:
+  - title: Verificar credenciales
+    show: [start, check, ok]
+  - title: Segundo factor
+    show: [mfa, code, session]
+  - title: Resultado
+    show: [session, done, deny]

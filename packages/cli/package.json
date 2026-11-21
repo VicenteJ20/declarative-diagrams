@@ -1,0 +1,8 @@
+{
+  "name": "@dgm/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "dgm": "dist/index.js" },
+  "scripts": { "build": "tsup src/index.ts --format esm --clean" },
+  "dependencies": { "@dgm/core": "*" }
+}

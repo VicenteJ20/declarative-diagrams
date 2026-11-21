@@ -1,0 +1,38 @@
+type: er
+title: Modelo de datos de una tienda
+nodes:
+  - id: customer
+    label: customer
+    kind: entity
+    fields:
+      - { name: id, type: uuid, key: pk }
+      - { name: email, type: text }
+      - { name: created_at, type: timestamp }
+  - id: order
+    label: order
+    kind: entity
+    fields:
+      - { name: id, type: uuid, key: pk }
+      - { name: customer_id, type: uuid, key: fk }
+      - { name: status, type: text }
+      - { name: total, type: numeric }
+  - id: item
+    label: order_item
+    kind: entity
+    fields:
+      - { name: order_id, type: uuid, key: fk }
+      - { name: product_id, type: uuid, key: fk }
+      - { name: qty, type: int }
+  - id: product
+    label: product
+    kind: entity
+    fields:
+      - { name: id, type: uuid, key: pk }
+      - { name: name, type: text }
+      - { name: price, type: numeric }
+edges:
+  - { from: customer, to: order, fromLabel: "1", toLabel: "N", label: realiza }
+  - { from: order, to: item, fromLabel: "1", toLabel: "N" }
+  - { from: product, to: item, fromLabel: "1", toLabel: "N" }
+notes:
+  - { target: item, text: Tabla puente entre pedidos y productos; la clave es compuesta. }

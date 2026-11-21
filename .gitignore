@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+*.tsbuildinfo
+
+# generated example outputs (regenerate with `npm run example`)
+examples/out/
+
+# env / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# local tooling / OS
+.claude/settings.local.json
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,87 @@
+type: architecture
+title: Azure web app — one subscription, hub-and-spoke
+description: Users reach an App Gateway in the hub; the app tier talks to SQL and Key Vault through private endpoints.
+nodes:
+  - id: users
+    label: Users
+    kind: user
+  - id: tenant
+    label: contoso.onmicrosoft.com
+    kind: azure.tenant
+    children:
+      - id: sub
+        label: prod-workload
+        kind: azure.subscription
+        children:
+          - id: rg-net
+            label: rg-network
+            kind: azure.resource-group
+            children:
+              - id: hub
+                label: vnet-hub
+                kind: azure.vnet
+                children:
+                  - id: agw
+                    label: App Gateway
+                    sublabel: WAF v2
+                    kind: gateway
+                    description: Terminates TLS and applies WAF rules before traffic enters the spoke.
+                  - id: fw
+                    label: Azure Firewall
+                    kind: firewall
+          - id: rg-app
+            label: rg-app
+            kind: azure.resource-group
+            children:
+              - id: spoke
+                label: vnet-spoke
+                kind: azure.vnet
+                children:
+                  - id: snet-app
+                    label: snet-app
+                    kind: azure.subnet
+                    children:
+                      - id: web
+                        label: App Service
+                        sublabel: P1v3
+                        kind: compute
+                      - id: fn
+                        label: Worker
+                        kind: function
+                  - id: snet-data
+                    label: snet-data
+                    kind: azure.subnet
+                    children:
+                      - id: sql
+                        label: Azure SQL
+                        kind: database
+                        description: Reachable only through a private endpoint; public access disabled.
+                      - id: kv
+                        label: Key Vault
+                        kind: secret
+          - id: rg-obs
+            label: rg-observability
+            kind: azure.resource-group
+            children:
+              - id: mon
+                label: Log Analytics
+                kind: monitor
+edges:
+  - { from: users, to: agw, label: HTTPS, flow: true }
+  - { from: agw, to: fw }
+  - { from: fw, to: web, flow: true, label: peering }
+  - { from: web, to: sql, label: private endpoint, flow: true }
+  - { from: web, to: kv, style: dashed }
+  - { from: fn, to: sql }
+  - { from: web, to: mon, style: dashed, label: diagnostics }
+notes:
+  - { target: agw, text: "All inbound traffic is inspected here first." }
+  - { target: "web->sql", text: "Queries never leave the Microsoft backbone." }
+  - { target: kv, text: "Secrets are fetched with a managed identity — no connection strings in config." }
+steps:
+  - title: A request comes in
+    show: [users, agw, fw, web]
+  - title: The app reads data
+    show: [web, sql, kv]
+  - title: Everything is logged
+    show: [web, mon, "web->mon"]

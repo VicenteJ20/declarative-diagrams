@@ -1,0 +1,23 @@
+---
+layout: ../layouts/Post.astro
+title: Arquitectura web en Azure
+---
+import { Diagram } from "@dgm/react";
+import arch from "../diagrams/azure-landing-zone.diagram.yaml";
+import flow from "../diagrams/login-flow.diagram.yaml";
+import er from "../diagrams/shop-er.diagram.yaml";
+
+Este post muestra un diagrama **interactivo**: pasa el ratón sobre un recurso para ver sus conexiones,
+haz clic para fijarlo, o recorre los pasos con los botones.
+
+<Diagram client:visible svg={arch} caption="Figura 1. Hub-and-spoke con una sola suscripción." minWidth={900} />
+
+Después del diagrama el texto sigue con normalidad, y el mismo YAML se exporta a PNG para el RSS o las redes.
+
+## Un flujo
+
+<Diagram client:visible svg={flow} caption="Figura 2. Diagrama de flujo con pasos navegables." minWidth={420} />
+
+## Un modelo de datos
+
+<Diagram client:visible svg={er} caption="Figura 3. Entidad-relación con cardinalidades." minWidth={640} />

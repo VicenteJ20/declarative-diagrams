@@ -1,0 +1,22 @@
+{
+  "name": "diagrams-maker",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "site-demo"
+  ],
+  "scripts": {
+    "build": "npm run build -w @dgm/core && npm run build -w @dgm/cli && npm run build -w @dgm/react",
+    "test": "vitest run",
+    "example": "node packages/cli/dist/index.js render examples/azure-landing-zone.diagram.yaml -o examples/out/azure-landing-zone.svg",
+    "demo:dev": "npm run dev -w site-demo",
+    "demo:build": "npm run build -w site-demo"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
