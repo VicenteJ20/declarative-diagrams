@@ -6,6 +6,8 @@ import { Diagram } from "@dgm/react";
 import arch from "../diagrams/azure-landing-zone.diagram.yaml";
 import flow from "../diagrams/login-flow.diagram.yaml";
 import er from "../diagrams/shop-er.diagram.yaml";
+import Playground from "../components/Playground.tsx";
+import sage from "../themes/sage.theme.yaml";
 
 Este post muestra un diagrama **interactivo**: pasa el ratón sobre un recurso para ver sus conexiones,
 haz clic para fijarlo, o recorre los pasos con los botones.
@@ -21,3 +23,9 @@ Después del diagrama el texto sigue con normalidad, y el mismo YAML se exporta 
 ## Un modelo de datos
 
 <Diagram client:visible svg={er} caption="Figura 3. Entidad-relación con cardinalidades." minWidth={640} />
+
+## Temas y modo
+
+Cualquier tema se aplica en caliente (variables CSS), sin reconstruir el SVG:
+
+<Playground client:visible svg={flow} sage={sage} />

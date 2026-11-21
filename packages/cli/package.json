@@ -4,5 +4,5 @@
   "type": "module",
   "bin": { "dgm": "dist/index.js" },
   "scripts": { "build": "tsup src/index.ts --format esm --clean" },
-  "dependencies": { "@dgm/core": "*" }
+  "dependencies": { "@dgm/core": "*", "yaml": "^2.6.0" }
 }

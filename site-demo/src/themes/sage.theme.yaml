@@ -1,0 +1,7 @@
+name: sage
+description: Custom project theme — soft sage greens (demo)
+extends: distill
+seed:
+  accent: "#4f7a5a"
+  flow: "#d08a2e"
+  neutral: "#eef3ec"

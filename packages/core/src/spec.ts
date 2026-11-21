@@ -1,11 +1,14 @@
 import { z } from "zod";
 import YAML from "yaml";
 import { KINDS } from "./kinds.js";
+import { TONES, Tone, resolveTheme, ThemeDef, Palette } from "./themes/index.js";
 
 export interface NodeSpec {
   id: string;
   label: string;
   kind?: string;
+  /** Semantic colour from the theme (e.g. `warn`). Overrides the kind's default. */
+  tone?: Tone;
   sublabel?: string;
   /** Shown in a tooltip on hover. */
   description?: string;
@@ -20,6 +23,7 @@ const NodeSchema: z.ZodType<NodeSpec> = z.lazy(() =>
       id: z.string().min(1),
       label: z.string(),
       kind: z.string().optional(),
+      tone: z.enum(TONES).optional(),
       sublabel: z.string().optional(),
       description: z.string().optional(),
       fields: z
@@ -74,6 +78,10 @@ export const SpecSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     direction: z.enum(["RIGHT", "DOWN"]).default("RIGHT"),
+    /** Theme name (`olive`, `azure`…) or an inline theme definition. Overridable at render time. */
+    theme: z.union([z.string(), z.record(z.unknown())]).optional(),
+    /** Token overrides on top of the theme. */
+    palette: z.record(z.unknown()).optional(),
     nodes: z.array(NodeSchema).min(1),
     edges: z.array(EdgeSchema).default([]),
     notes: z.array(NoteSchema).default([]),
@@ -81,7 +89,10 @@ export const SpecSchema = z
   })
   .strict();
 
-export type DiagramSpec = z.infer<typeof SpecSchema>;
+export type DiagramSpec = Omit<z.infer<typeof SpecSchema>, "theme" | "palette"> & {
+  theme?: string | ThemeDef;
+  palette?: Palette;
+};
 export type EdgeSpec = DiagramSpec["edges"][number] & { id: string };
 
 export interface ValidationResult {
@@ -115,7 +126,15 @@ export function validateSpec(input: unknown): ValidationResult {
     for (const i of parsed.error.issues) errors.push(`${i.path.join(".") || "(root)"}: ${i.message}`);
     return { ok: false, errors, warnings };
   }
-  const spec = parsed.data;
+  const spec = parsed.data as DiagramSpec;
+
+  if (spec.theme) {
+    try {
+      resolveTheme(spec.theme);
+    } catch (e) {
+      errors.push(`theme: ${(e as Error).message}`);
+    }
+  }
 
   const parentOf = new Map<string, string | undefined>();
   const walk = (nodes: NodeSpec[], parent?: string) => {
@@ -170,6 +189,7 @@ export function specJsonSchema(): unknown {
       id: { type: "string" },
       label: { type: "string" },
       kind: { type: "string", enum: Object.keys(KINDS) },
+      tone: { enum: [...TONES] },
       sublabel: { type: "string" },
       description: { type: "string" },
       fields: {
@@ -195,6 +215,8 @@ export function specJsonSchema(): unknown {
       title: { type: "string" },
       description: { type: "string" },
       direction: { enum: ["RIGHT", "DOWN"] },
+      theme: { description: "Theme name (distill, olive, azure, aws, orange, slate, mono, or a project theme) or an inline theme object", oneOf: [{ type: "string" }, { type: "object" }] },
+      palette: { type: "object", description: "Token overrides: { accent, light: {…}, dark: {…}, tones: {…} }" },
       nodes: { type: "array", minItems: 1, items: { $ref: "#/definitions/node" } },
       edges: {
         type: "array",

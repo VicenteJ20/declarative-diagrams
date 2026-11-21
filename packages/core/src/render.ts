@@ -1,14 +1,19 @@
 import { DiagramSpec, edgeIds } from "./spec.js";
 import { Layout, LEdge, Pt, layoutSpec, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
 import { kindOf } from "./kinds.js";
-import { css, resolveVars, ThemeName } from "./theme.js";
+import { css } from "./theme.js";
+import { Mode, isMode, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
 
 export interface RenderOptions {
   /** Static output: no script, no animation, theme variables resolved (PNG-safe). */
   static?: boolean;
-  /** Force a theme; default follows prefers-color-scheme (interactive) or "light" (static). */
-  theme?: ThemeName;
+  /** `auto` (default: follows the page / OS), `light` or `dark`. Static output treats `auto` as light. */
+  mode?: Mode;
+  /** Theme name or definition. Overrides `spec.theme`. Legacy: "auto" | "light" | "dark" is treated as `mode`. */
+  theme?: string | ThemeDef | ResolvedTheme;
+  /** Token overrides applied on top of the theme (merged over `spec.palette`). */
+  palette?: Palette;
   /** Embed the runtime <script> in the SVG (standalone use). React sets this to false and attaches itself. */
   embedRuntime?: boolean;
 }
@@ -65,8 +70,21 @@ export async function renderSvg(spec: DiagramSpec, opts: RenderOptions = {}): Pr
   return renderLayout(spec, layout, opts);
 }
 
+/** Precedence: render option > spec > default. `theme: "dark"` (legacy) is read as a mode. */
+export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { theme: ResolvedTheme; mode: Mode } {
+  let mode: Mode = opts.mode ?? "auto";
+  let themeInput: RenderOptions["theme"] = opts.theme ?? spec.theme ?? "distill";
+  if (typeof themeInput === "string" && isMode(themeInput)) {
+    if (!opts.mode) mode = themeInput;
+    themeInput = spec.theme ?? "distill";
+  }
+  const theme = applyPalette(resolveTheme(themeInput), { ...(spec.palette ?? {}), ...(opts.palette ?? {}) });
+  return { theme, mode };
+}
+
 export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOptions = {}): string {
   const isStatic = !!opts.static;
+  const { theme, mode } = resolveRenderTheme(spec, opts);
   const ids = edgeIds(spec);
   const nodeById = new Map(layout.nodes.map((nd) => [nd.id, nd]));
   const edgeById = new Map(layout.edges.map((e) => [e.id, e]));
@@ -143,7 +161,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       const tag = k.tag ? `<text class="tag" x="${n(nd.x + 12)}" y="${n(nd.y + 17)}">${esc(k.tag.toUpperCase())}</text>` : "";
       const ty = k.tag ? nd.y + 34 : nd.y + 25;
       contSvg +=
-        `<g class="el cont ${parity}" ${common}>` +
+        `<g class="el cont ${parity}${nd.spec.tone ? ` tn-${nd.spec.tone}` : ""}" ${common}>` +
         `<rect x="${n(nd.x)}" y="${n(nd.y)}" width="${n(nd.w)}" height="${n(nd.h)}" rx="8"/>` +
         tag +
         `<text class="head" x="${n(nd.x + 12)}" y="${n(ty)}">${esc(nd.spec.label)}</text>` +
@@ -151,7 +169,9 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     } else {
       const cy = nd.y + nd.h / 2;
       const cx = nd.x + nd.w / 2;
-      const open = `<g class="el node" tabindex="0" ${common}>`;
+      // tone: card nodes tint their badge; flat shapes (pill/diamond/plain/entity) tint the whole shape
+      const tn = nd.spec.tone && k.shape ? ` tn-${nd.spec.tone}` : "";
+      const open = `<g class="el node${tn}" tabindex="0" ${common}>`;
       const box = (rx: number) =>
         `<rect x="${n(nd.x)}" y="${n(nd.y)}" width="${n(nd.w)}" height="${n(nd.h)}" rx="${rx}"/>`;
       const centered = () =>
@@ -187,7 +207,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
         nodeSvg +=
           open +
           box(6) +
-          `<g class="badge t-${k.tone}" transform="translate(${n(nd.x + 20)} ${n(cy)})"><circle r="11"/>${glyphSvg(nd.spec.kind)}</g>` +
+          `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(nd.x + 20)} ${n(cy)})"><circle r="11"/>${glyphSvg(nd.spec.kind)}</g>` +
           `<text class="head" x="${n(nd.x + 38)}" y="${n(nd.spec.sublabel ? cy - 3 : cy + 4.5)}">${esc(nd.spec.label)}</text>` +
           (nd.spec.sublabel ? `<text class="sub" x="${n(nd.x + 38)}" y="${n(cy + 12)}">${esc(nd.spec.sublabel)}</text>` : "") +
           `</g>`;
@@ -244,11 +264,11 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const dataSteps = spec.steps.length
     ? ` data-steps='${JSON.stringify(spec.steps.map((s) => ({ title: s.title, text: s.text }))).replace(/'/g, "&#39;")}'`
     : "";
-  const themeAttr = opts.theme ? ` data-theme="${opts.theme}"` : "";
+  const themeAttr = !isStatic && mode !== "auto" ? ` data-mode="${mode}"` : "";
   const script =
     !isStatic && opts.embedRuntime !== false ? `<script><![CDATA[${RUNTIME_SOURCE}]]></script>` : "";
 
-  let svg =
+  const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" class="dgm" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"${themeAttr}${dataSteps}>` +
     `<title>${esc(spec.title ?? "Diagram")}</title>` +
     (spec.description ? `<desc>${esc(spec.description)}</desc>` : "") +
@@ -256,13 +276,12 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     `<marker id="dgm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1.5L9 5L0 8.5z"/></marker>` +
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +
-    `<style>${css()}</style>` +
+    `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light" })}</style>` +
     title +
     `<g transform="translate(${ox} ${oy})">${contSvg}${edgeSvg}${nodeSvg}${notesSvg}</g>` +
     stepper +
     script +
     `</svg>`;
 
-  if (isStatic) svg = resolveVars(svg, opts.theme ?? "light");
   return svg;
 }

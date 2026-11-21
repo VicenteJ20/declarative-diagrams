@@ -1,0 +1,10 @@
+# Example project theme. Register it with dgm.config.json: { "themes": ["themes/*.theme.yaml"] }
+name: olive-paper
+description: Olive on warm off-white
+extends: olive
+light:
+  panel-a: "#eceed9"
+  tones:
+    data: "#cfdcc6"
+dark:
+  accent: "#a9bb62"

@@ -20,3 +20,6 @@ examples/out/
 .DS_Store
 Thumbs.db
 *.log
+
+# local icon cache (official Azure/AWS packs are never committed)
+.dgm/
