@@ -10,6 +10,7 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `title`, `description` | title drawn on top (serif italic); description is the accessible text (`<desc>`) |
 | `direction` | `RIGHT` (default) or `DOWN` |
 | `theme` | theme name or inline theme (see themes.md). Render options override it |
+| `font` | `mixed` (default) · `sans` · `serif` — typeface style of the whole diagram |
 | `palette` | token overrides: `{ accent: "#…", dark: { accent: "#…" }, tones: { data: "#…" } }` |
 | `notesPosition` | `side` (margin gutter, default) or `below` (numbered list under the diagram) |
 | `variants.narrow` | optional vertical layout for narrow screens: `{ direction?: DOWN, notesPosition?: below }`; `{}` = both defaults |

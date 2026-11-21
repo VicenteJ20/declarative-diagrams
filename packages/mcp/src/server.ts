@@ -421,6 +421,7 @@ export function createServer(opts: ServerOptions): McpServer {
         format: z.enum(["png", "svg"]).optional().describe("Default png."),
         theme: z.string().optional(),
         mode: z.enum(["auto", "light", "dark"]).optional(),
+        font: z.enum(["mixed", "sans", "serif"]).optional().describe("Typeface: mixed (default: sans labels + serif title/notes), sans or serif everywhere."),
         aspect: z.union([z.string(), z.number()]).optional().describe("Letterbox to a ratio such as 16/9 or 1.5."),
         padding: z.number().optional(),
         variant: z.enum(["narrow"]).optional().describe("Render the spec's author-defined variants.narrow layout."),
@@ -440,7 +441,7 @@ export function createServer(opts: ServerOptions): McpServer {
           if (!v) return fail("This spec has no `variants.narrow`. Add `variants: { narrow: {} }` to define one.");
           spec = v;
         }
-        const ro = { theme: a.theme, mode: a.mode as Mode | undefined, aspect: parseAspect(a.aspect), padding: a.padding };
+        const ro = { theme: a.theme, mode: a.mode as Mode | undefined, font: a.font, aspect: parseAspect(a.aspect), padding: a.padding };
         const format = a.format ?? (a.save_to && extname(a.save_to).toLowerCase() === ".svg" ? "svg" : "png");
         const warn = res.warnings.length ? `\nWarnings:\n- ${res.warnings.join("\n- ")}` : "";
         if (format === "png") {

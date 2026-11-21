@@ -87,6 +87,8 @@ export const SpecSchema = z
     direction: z.enum(["RIGHT", "DOWN"]).default("RIGHT"),
     /** Theme name (`olive`, `azure`…) or an inline theme definition. Overridable at render time. */
     theme: z.union([z.string(), z.record(z.unknown())]).optional(),
+    /** Typeface style: `mixed` (default, Distill), `sans` or `serif`. Overridable at render time. */
+    font: z.enum(["mixed", "sans", "serif"]).optional(),
     /** Token overrides on top of the theme. */
     palette: z.record(z.unknown()).optional(),
     /** Where notes go: a margin gutter (default) or a numbered list under the diagram. */
@@ -268,6 +270,7 @@ export function specJsonSchema(): unknown {
         },
       },
       theme: { description: "Theme name (distill, olive, azure, aws, orange, slate, mono, or a project theme) or an inline theme object", oneOf: [{ type: "string" }, { type: "object" }] },
+      font: { enum: ["mixed", "sans", "serif"], description: "mixed = sans labels + serif title/notes (default); sans or serif = one face everywhere" },
       palette: { type: "object", description: "Token overrides: { accent, light: {…}, dark: {…}, tones: {…} }" },
       nodes: { type: "array", minItems: 1, items: { $ref: "#/definitions/node" } },
       edges: {

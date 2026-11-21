@@ -32,5 +32,11 @@ Without `variants` nothing changes. When the narrow layout is active, `minWidth`
 
 ## Static exports
 
-`dgm render in.yaml -o out.png --aspect 16/9 --padding 16` letterboxes the canvas (e.g. social cards);
+`dgm render in.yaml -o out.png --aspect 16/9 --padding 24` letterboxes the canvas (e.g. social cards). Every export has a 16-unit margin by
+default (`--padding 0` removes it);
 `--variant narrow` renders the narrow layout.
+
+## Arrows and icons
+
+Nodes drawn *stacked* (official Azure/AWS icons: big icon, label under it) are wider than their icon, so arrows start and end at
+the **icon's edge** (5 px gap) instead of the invisible box, and layers get more spacing (92 vs 64). Card nodes are unchanged.

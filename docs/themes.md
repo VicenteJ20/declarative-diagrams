@@ -48,3 +48,20 @@ The SVG reads `--dgm-<token>` (light) and `--dgm-dark-<token>` (dark), falling b
 ```
 
 Import a theme file in MDX to pass it to the component: `import olive from "./olive.theme.yaml"`.
+
+## Typeface (`font`)
+
+Default `mixed` follows Distill: **sans** for labels and containers, **serif** for the title, notes and edge-end labels.
+Switch the whole diagram with one option:
+
+| Value | Result |
+|---|---|
+| `mixed` (default) | sans labels · serif title/notes |
+| `sans` | sans everywhere |
+| `serif` | serif everywhere |
+
+Set it in the spec (`font: sans`), a theme (`font: serif`), `renderSvg({ font })`, `dgm render --font serif`,
+the Vite plugin `dgm({ font })`, the component `<Diagram font="serif" />` (runtime, no rebuild) or the MCP `render_diagram` tool.
+Precedence: option/prop > spec > theme > `mixed`. To use **specific families**, give the theme `fonts: { serif: "…", sans: "…" }`
+or set `--dgm-serif` / `--dgm-sans` in CSS (the SVG falls back to the baked stacks). Web fonts must be loaded by your page;
+PNG export uses fonts installed on the machine (Georgia / Segoe UI by default).

@@ -3,7 +3,7 @@ import { Layout, LEdge, Pt, layoutSpec, ENTITY_HEAD, ENTITY_ROW } from "./layout
 import { kindOf } from "./kinds.js";
 import { nodeIcon, IconEmitter, diagramNs, STACK_ICON, CARD_ICON, HEAD_ICON } from "./icons/index.js";
 import { css } from "./theme.js";
-import { Mode, isMode, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme } from "./themes/index.js";
+import { Mode, isMode, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme, FontMode } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
 
 export interface RenderOptions {
@@ -13,9 +13,11 @@ export interface RenderOptions {
   mode?: Mode;
   /** Theme name or definition. Overrides `spec.theme`. Legacy: "auto" | "light" | "dark" is treated as `mode`. */
   theme?: string | ThemeDef | ResolvedTheme;
+  /** Typeface style: `mixed` (default), `sans` or `serif`. Overrides `spec.font` and the theme's `font`. */
+  font?: FontMode;
   /** Letterbox the canvas to this width/height ratio (content centred, never distorted). E.g. 16/9. */
   aspect?: number;
-  /** Extra margin around the content, in SVG units. */
+  /** Margin around the content, in SVG units (default 16, so titles and notes never touch the edge). */
   padding?: number;
   /** Token overrides applied on top of the theme (merged over `spec.palette`). */
   palette?: Palette;
@@ -76,7 +78,7 @@ export async function renderSvg(spec: DiagramSpec, opts: RenderOptions = {}): Pr
 }
 
 /** Precedence: render option > spec > default. `theme: "dark"` (legacy) is read as a mode. */
-export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { theme: ResolvedTheme; mode: Mode } {
+export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { theme: ResolvedTheme; mode: Mode; font: FontMode } {
   let mode: Mode = opts.mode ?? "auto";
   let themeInput: RenderOptions["theme"] = opts.theme ?? spec.theme ?? "distill";
   if (typeof themeInput === "string" && isMode(themeInput)) {
@@ -84,12 +86,12 @@ export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { th
     themeInput = spec.theme ?? "distill";
   }
   const theme = applyPalette(resolveTheme(themeInput), { ...(spec.palette ?? {}), ...(opts.palette ?? {}) });
-  return { theme, mode };
+  return { theme, mode, font: opts.font ?? spec.font ?? theme.font ?? "mixed" };
 }
 
 export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOptions = {}): string {
   const isStatic = !!opts.static;
-  const { theme, mode } = resolveRenderTheme(spec, opts);
+  const { theme, mode, font } = resolveRenderTheme(spec, opts);
   const ids = edgeIds(spec);
   const icons = new IconEmitter(diagramNs(JSON.stringify(layout.nodes.map((q) => [q.id, q.spec.icon, q.spec.label]))));
   const nodeById = new Map(layout.nodes.map((nd) => [nd.id, nd]));
@@ -112,7 +114,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const NOTE_W = 190;
   const below = spec.notesPosition === "below";
   const GUTTER = spec.notes.length && !below ? NOTE_W + 40 : 0;
-  const titleH = spec.title ? 34 : 0;
+  const titleH = spec.title ? 44 : 0;
   const stepperH = spec.steps.length ? 40 : 0;
   const ox = 0;
   const oy = titleH;
@@ -161,7 +163,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   });
 
   // ---- canvas: content size, optional padding, optional target aspect ratio (letterboxed, content centred) ----
-  const pad = opts.padding ?? 0;
+  const pad = opts.padding ?? 16;
   let W = layout.width + GUTTER + 2 * pad;
   let H = layout.height + titleH + stepperH + notesH + 2 * pad;
   let dx = pad;
@@ -266,11 +268,33 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   }
 
   // ---- edges ----
+  // Stacked (icon + label) nodes have a box wider than the icon: end/start arrows at the ICON edge so they visibly connect
+  // (otherwise they stop ~40px short). Only when the segment is horizontal and meets the box within the icon's rows.
+  const stackedNodes = new Map(layout.nodes.filter((q) => !q.container && nodeIcon(q.spec)?.variant === "stacked").map((q) => [q.id, q]));
+  const ARROW_GAP = 5;
+  const trimStacked = (le: LEdge): Pt[] => {
+    const pts = le.points.map((q) => ({ ...q }));
+    const trim = (nd: { x: number; y: number; w: number } | undefined, atStart: boolean) => {
+      if (!nd || pts.length < 2) return;
+      const end = atStart ? pts[0] : pts[pts.length - 1];
+      const nxt = atStart ? pts[1] : pts[pts.length - 2];
+      const cx = nd.x + nd.w / 2;
+      const inIcon = end.y >= nd.y + 8 && end.y <= nd.y + 8 + STACK_ICON;
+      if (Math.abs(end.y - nxt.y) > 0.6 || !inIcon) return;
+      if (Math.abs(end.x - nd.x) < 1.5 && nxt.x < end.x) end.x = Math.max(end.x, cx - STACK_ICON / 2 - ARROW_GAP);
+      else if (Math.abs(end.x - (nd.x + nd.w)) < 1.5 && nxt.x > end.x) end.x = Math.min(end.x, cx + STACK_ICON / 2 + ARROW_GAP);
+    };
+    trim(stackedNodes.get(le.from), true);
+    trim(stackedNodes.get(le.to), false);
+    return pts;
+  };
+
   let edgeSvg = "";
   spec.edges.forEach((es, i) => {
     const le: LEdge | undefined = edgeById.get(ids[i]);
     if (!le || le.points.length < 2) return;
-    const d = roundedPath(le.points);
+    const epts = trimStacked(le);
+    const d = roundedPath(epts);
     const cls = `el edge${es.style === "dashed" ? " dashed" : ""}`;
     const lab = le.label;
     const lx = lab ? lab.x : 0;
@@ -283,7 +307,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       const y = a.y + (dy !== 0 && dx === 0 ? dy * 12 : -6);
       return `<text class="endl" x="${n(x)}" y="${n(y)}" text-anchor="${dx !== 0 ? "middle" : "start"}">${esc(text)}</text>`;
     };
-    const pts = le.points;
+    const pts = epts;
     const ends =
       endLabel(es.fromLabel, pts[0], pts[1]) + endLabel(es.toLabel, pts[pts.length - 1], pts[pts.length - 2]);
     edgeSvg +=
@@ -310,7 +334,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       `<text class="step-label" x="70" y="16"></text></g>`;
   }
 
-  const title = spec.title ? `<text class="title" x="2" y="20">${esc(spec.title)}</text>` : "";
+  const title = spec.title ? `<text class="title" x="0" y="18">${esc(spec.title)}</text>` : "";
   const dataSteps = spec.steps.length
     ? ` data-steps='${JSON.stringify(spec.steps.map((s) => ({ title: s.title, text: s.text }))).replace(/'/g, "&#39;")}'`
     : "";
@@ -327,7 +351,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     `<marker id="dgm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1.5L9 5L0 8.5z"/></marker>` +
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +
-    `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light" })}</style>` +
+    `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light", font })}</style>` +
     `<g transform="translate(${n(dx)} ${n(dy)})">` +
     title +
     `<g transform="translate(${ox} ${oy})">${contSvg}${edgeSvg}${nodeSvg}${notesSvg}</g>` +

@@ -48,3 +48,9 @@ The SVG reads `--dgm-<token>` (light) and `--dgm-dark-<token>` (dark) from the p
 ```
 
 In MDX, import a theme file and pass it: `import olive from "./olive-paper.theme.yaml"` → `<Diagram theme={olive} />`.
+
+## Typeface
+
+`font: mixed` (default: sans labels, serif title/notes) · `sans` · `serif` — in the spec, a theme, `render_diagram font=…`,
+`<Diagram font="serif" />` or `dgm render --font`. Specific families: theme `fonts: { serif, sans }`. Ask the user which they
+prefer if they care about the look; `serif` suits editorial/Distill pages, `sans` suits dense product docs.

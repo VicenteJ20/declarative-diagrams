@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { attach } from "@dgm/core/runtime";
-import { applyPalette, isMode, resolveTheme, themeToCssVars } from "@dgm/core/themes";
-import type { Mode, Palette, ThemeDef, ResolvedTheme } from "@dgm/core/themes";
+import { applyPalette, fontToCssVars, isMode, resolveTheme, themeToCssVars } from "@dgm/core/themes";
+import type { FontMode, Mode, Palette, ThemeDef, ResolvedTheme } from "@dgm/core/themes";
 
 export interface DiagramProps {
   /** SVG string produced by the Vite plugin (`import svg from "./x.diagram.yaml"`) or `renderSvg()`. */
@@ -18,6 +18,8 @@ export interface DiagramProps {
    * through CSS variables. Legacy: "light" | "dark" | "auto" are treated as `mode`.
    */
   theme?: string | ThemeDef | ResolvedTheme;
+  /** Typeface style: `mixed` (Distill: sans labels, serif title/notes), `sans` or `serif` everywhere. Default: what the SVG was built with. */
+  font?: FontMode;
   /** Token overrides: `{ accent: "#6b7a2f", dark: { accent: "#a9bb62" }, tones: { data: "#c8d8c4" } }`. */
   palette?: Palette;
   /**
@@ -91,6 +93,7 @@ export function Diagram({
   mode,
   theme,
   palette,
+  font,
   fit = "auto",
   minWidth = 640,
   aspectRatio,
@@ -120,12 +123,13 @@ export function Diagram({
   }
 
   const vars = useMemo(() => {
-    if (!effTheme && !palette) return undefined;
+    if (!effTheme && !palette && !font) return undefined;
     const base: ResolvedTheme = effTheme
       ? resolveTheme(effTheme)
       : { resolved: true, name: "", light: {}, dark: {}, fonts: {} };
-    return themeToCssVars(applyPalette(base, palette));
-  }, [effTheme, palette]);
+    const v = themeToCssVars(applyPalette(base, palette));
+    return font ? { ...v, ...fontToCssVars(font, base.fonts) } : v;
+  }, [effTheme, palette, font]);
 
   // attach interactivity to the (re)rendered inline SVG + keep data-mode in sync with the site
   useEffect(() => {

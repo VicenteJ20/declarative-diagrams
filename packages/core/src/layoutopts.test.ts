@@ -22,10 +22,13 @@ describe("aspect, padding, notes position, variants", () => {
   });
 
   it("padding grows the canvas on every side", async () => {
-    const a = dims(await renderSvg(spec));
+    const a = dims(await renderSvg(spec, { padding: 0 }));
     const b = dims(await renderSvg(spec, { padding: 10 }));
     expect(b.w).toBe(a.w + 20);
     expect(b.h).toBe(a.h + 20);
+    // the default keeps a margin (16) so titles/notes never touch the edge
+    const d = dims(await renderSvg(spec));
+    expect(d.w).toBe(a.w + 32);
   });
 
   it("notesPosition: below puts notes under the diagram instead of a side gutter", async () => {

@@ -1,13 +1,15 @@
-import { ResolvedTheme, TOKEN_KEYS, TONES, TokenMap } from "./themes/index.js";
+import { ResolvedTheme, TOKEN_KEYS, TONES, TokenMap, FONT_STACKS, FontMode } from "./themes/index.js";
 
-export const SERIF = `Georgia,'Source Serif 4','Times New Roman',serif`;
-export const SANS = `'Segoe UI',-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif`;
+export const SERIF = FONT_STACKS.serif;
+export const SANS = FONT_STACKS.sans;
 
 export interface CssOptions {
   /** Literal values, no custom properties/media queries/animation (for resvg → PNG). */
   literal?: boolean;
   /** Mode used for literal output. */
   mode?: "light" | "dark";
+  /** Typeface style; default `mixed`. */
+  font?: FontMode;
 }
 
 /**
@@ -19,8 +21,11 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
   const lit = !!o.literal;
   const lm: TokenMap = (o.mode === "dark" ? theme.dark : theme.light) ?? {};
   const v = (k: string) => (lit ? (lm[k] ?? "#000") : `var(--${k})`);
-  const serif = theme.fonts.serif ?? SERIF;
-  const sans = theme.fonts.sans ?? SANS;
+  const serif0 = theme.fonts.serif ?? SERIF;
+  const sans0 = theme.fonts.sans ?? SANS;
+  const font = o.font ?? theme.font ?? "mixed";
+  const serif = font === "sans" ? sans0 : serif0; // `sans`: annotations/title use the sans face too
+  const sans = font === "serif" ? serif0 : sans0; // `serif`: labels use the serif face too
   const fSerif = lit ? serif : `var(--dgm-serif,${serif})`;
   const fSans = lit ? sans : `var(--dgm-sans,${sans})`;
 

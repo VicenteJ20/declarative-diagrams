@@ -1,13 +1,15 @@
 import { readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import YAML from "yaml";
-import { parseSpecText, validateSpec, applyVariant, renderSvg, loadConfig, parseThemeDef, type Mode, type ThemeDef, type Palette } from "@dgm/core";
+import { parseSpecText, validateSpec, applyVariant, renderSvg, loadConfig, parseThemeDef, type Mode, type FontMode, type ThemeDef, type Palette } from "@dgm/core";
 
 export interface DgmPluginOptions {
   /** Default theme baked into every diagram (name or definition). A spec's own `theme:` is overridden by this. */
   theme?: string | ThemeDef;
   /** Default mode baked in (`auto` follows the page). */
   mode?: Mode;
+  /** Typeface style baked into every diagram: `mixed` (default), `sans` or `serif`. */
+  font?: FontMode;
   /** Token overrides baked into every diagram. */
   palette?: Palette;
   /**
@@ -51,6 +53,7 @@ export default function dgm(options: DgmPluginOptions = {}) {
         theme: options.theme,
         mode: options.mode,
         palette: options.palette,
+        font: options.font,
       };
       const svg = await renderSvg(res.spec!, ro);
       // Author-defined `variants.narrow` (never applied automatically): `import svg, { narrow } from "./x.diagram.yaml"`

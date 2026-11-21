@@ -5,6 +5,15 @@ export type Mode = "auto" | "light" | "dark";
 export const MODES: Mode[] = ["auto", "light", "dark"];
 export const isMode = (v: unknown): v is Mode => typeof v === "string" && (MODES as string[]).includes(v);
 
+/** Typeface style: `mixed` = Distill (sans labels, serif title/notes) · `sans` = everything sans · `serif` = everything serif. */
+export type FontMode = "mixed" | "sans" | "serif";
+export const FONT_MODES: FontMode[] = ["mixed", "sans", "serif"];
+export const isFontMode = (v: unknown): v is FontMode => typeof v === "string" && (FONT_MODES as string[]).includes(v);
+export const FONT_STACKS = {
+  serif: `Georgia,'Source Serif 4','Times New Roman',serif`,
+  sans: `'Segoe UI',-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif`,
+};
+
 export const TONES = ["compute", "data", "network", "neutral", "accent", "ok", "warn", "danger", "info"] as const;
 export type Tone = (typeof TONES)[number];
 
@@ -39,6 +48,8 @@ export interface ThemeDef {
   light?: TokenOverlay;
   dark?: TokenOverlay;
   fonts?: { serif?: string; sans?: string };
+  /** Default typeface style of the theme (render option / spec `font` win). */
+  font?: FontMode;
 }
 
 export interface ResolvedTheme {
@@ -47,6 +58,7 @@ export interface ResolvedTheme {
   light: TokenMap;
   dark: TokenMap;
   fonts: { serif?: string; sans?: string };
+  font?: FontMode;
 }
 
 /** Palette overrides applied on top of a theme: `{ accent, light: {…}, dark: {…}, tones: {…} }`. */
@@ -82,7 +94,7 @@ export function resolveTheme(input: string | ThemeDef | ResolvedTheme = "distill
   const gen = def.seed ? fromSeed(def.seed) : null;
   const light = { ...(base?.light ?? {}), ...(gen?.light ?? {}), ...flatten(def.light) };
   const dark = { ...(base?.dark ?? {}), ...(gen?.dark ?? {}), ...flatten(def.dark) };
-  return { resolved: true, name: def.name, light, dark, fonts: { ...(base?.fonts ?? {}), ...(def.fonts ?? {}) } };
+  return { resolved: true, name: def.name, light, dark, fonts: { ...(base?.fonts ?? {}), ...(def.fonts ?? {}) }, font: def.font ?? base?.font };
 }
 
 export function applyPalette(theme: ResolvedTheme, palette?: Palette | null): ResolvedTheme {
@@ -104,6 +116,13 @@ export function themeToCssVars(theme: ResolvedTheme): Record<string, string> {
   if (theme.fonts.serif) out["--dgm-serif"] = theme.fonts.serif;
   if (theme.fonts.sans) out["--dgm-sans"] = theme.fonts.sans;
   return out;
+}
+
+/** CSS variables that switch the typeface style at runtime (what `<Diagram font>` sets). */
+export function fontToCssVars(font: FontMode, fonts: { serif?: string; sans?: string } = {}): Record<string, string> {
+  const serif = fonts.serif ?? FONT_STACKS.serif;
+  const sans = fonts.sans ?? FONT_STACKS.sans;
+  return { "--dgm-serif": font === "sans" ? sans : serif, "--dgm-sans": font === "serif" ? serif : sans };
 }
 
 export interface ContrastIssue {

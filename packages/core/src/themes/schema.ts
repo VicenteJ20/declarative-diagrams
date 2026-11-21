@@ -19,6 +19,7 @@ export const ThemeDefSchema = z
     seed: z.object({ accent: hex, flow: hex.optional(), neutral: hex.optional() }).strict().optional(),
     light: overlay.optional(),
     dark: overlay.optional(),
+    font: z.enum(["mixed", "sans", "serif"]).optional(),
     fonts: z.object({ serif: z.string().optional(), sans: z.string().optional() }).strict().optional(),
   })
   .strict();

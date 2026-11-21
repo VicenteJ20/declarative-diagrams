@@ -78,6 +78,8 @@ export async function layoutSpec(spec: DiagramSpec): Promise<Layout> {
     return { id: n.id, width: Math.ceil(w), height: n.sublabel ? 50 : 42 };
   };
 
+  const hasStacked = (ns: NodeSpec[]): boolean => ns.some((n) => (n.children?.length ? hasStacked(n.children) : nodeIcon(n)?.variant === "stacked"));
+  const stacked = hasStacked(spec.nodes); // icon + label nodes need longer arrows and more air between them
   const root = {
     id: "root",
     layoutOptions: {
@@ -85,8 +87,8 @@ export async function layoutSpec(spec: DiagramSpec): Promise<Layout> {
       "elk.direction": spec.direction,
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.edgeRouting": "ORTHOGONAL",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "64",
-      "elk.spacing.nodeNode": "28",
+      "elk.layered.spacing.nodeNodeBetweenLayers": stacked ? "92" : "64",
+      "elk.spacing.nodeNode": stacked ? "40" : "28",
       "elk.spacing.edgeNode": "22",
       "elk.spacing.edgeEdge": "14",
       "elk.spacing.edgeLabel": "4",
