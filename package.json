@@ -7,7 +7,7 @@
     "site-demo"
   ],
   "scripts": {
-    "build": "npm run build -w @dgm/core && npm run build -w @dgm/cli && npm run build -w @dgm/react",
+    "build": "npm run build -w @dgm/core && npm run build -w @dgm/cli && npm run build -w @dgm/react && npm run build -w @dgm/mcp",
     "test": "vitest run",
     "example": "node packages/cli/dist/index.js render examples/azure-landing-zone.diagram.yaml -o examples/out/azure-landing-zone.svg",
     "demo:dev": "npm run dev -w site-demo",

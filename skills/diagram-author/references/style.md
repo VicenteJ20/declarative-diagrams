@@ -1,0 +1,38 @@
+# Style guide and review checklist
+
+The look follows Distill.pub: restraint, one accent, serif annotations, pale panels. The renderer handles the visuals; your
+job is the *content and structure*.
+
+## Principles
+
+1. **One idea per diagram.** If you need two sentences to say what it shows, split it.
+2. **Show structure with nesting, behaviour with edges.** Don't use arrows to say "belongs to".
+3. **Colour means something.** The theme's accent is for interaction (hover/selection) and numbered notes; `tone` marks a
+   semantic category. Don't recolour things for decoration.
+4. **Annotate, don't clutter.** Notes carry the *why* (trust boundaries, limits, caveats); labels carry the *what*.
+5. **Animate sparingly.** `flow: true` on the 2–3 edges that tell the story.
+6. **Names the reader knows.** Use the product's real names for resources and the team's names for services.
+
+## Review checklist (do this on the PNG)
+
+- [ ] Can I say what the diagram shows in one sentence?
+- [ ] Is every node's label readable and not overflowing its box?
+- [ ] Do edges cross containers only where it matters? Any long detour that suggests a better nesting or `direction`?
+- [ ] Are the containers the right levels (not three nested panels with one resource)?
+- [ ] ≤ 15 nodes, ≤ 5 notes, 3–5 steps?
+- [ ] Is the main path obvious (animated edges, left-to-right or top-to-bottom)?
+- [ ] Do edge labels say protocol/port/verb, not repeat the node names?
+- [ ] Icons are official for cloud resources and consistent (don't mix `card` and `stacked` styles arbitrarily).
+- [ ] Dark mode: `render_diagram mode=dark` also looks right?
+- [ ] Narrow screens: is a `variants.narrow` needed? (wide `RIGHT` diagrams with many columns: yes)
+
+## Fixing common problems
+
+| Symptom | Fix |
+|---|---|
+| Very wide diagram | `direction: DOWN`, or split; add `variants: { narrow: {} }` |
+| Edge snakes around a container | connect to the node next to the border; or move the node into the container it talks to |
+| Cluttered middle | remove obvious edges (everything→monitoring): say it in a note |
+| Label collides with a line | shorten the label; labels sit on the edge midpoint |
+| Containers too big / empty | fewer sibling containers; drop levels that add no information |
+| Too many colours | remove `tone` except for one or two meanings |

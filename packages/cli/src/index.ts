@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { dirname, extname, resolve, basename } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync } from "node:fs";
+import { dirname, extname, resolve, basename, join } from "node:path";
+import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import {
   parseSpecText,
@@ -30,6 +32,8 @@ import {
   type DiagramSpec,
 } from "@dgm/core";
 
+const here = dirname(fileURLToPath(import.meta.url));
+
 const HELP = `dgm — Distill-style interactive diagrams
 
 Usage:
@@ -46,6 +50,9 @@ Usage:
                                     Same, for one explicit file/folder/URL (zip is kept)
   dgm icons search <text> [--pack az|aws|lu|<prefix>]   Find icon names
   dgm icons list [--pack …] | packs | aliases <azure|aws>
+
+  dgm skill install [--global]      Install the "diagram-author" Skill for Claude Code (.claude/skills/ or ~/.claude/skills/)
+  dgm mcp config                    Print the MCP server config (Claude Code .mcp.json / Claude Desktop)
 
   dgm theme list                    Built-in and project themes
   dgm theme show <name|file>        Resolved tokens (light + dark) as YAML
@@ -293,6 +300,27 @@ async function main() {
     case "icons":
       await iconsCmd(args);
       break;
+    case "skill": {
+      if (args[0] !== "install") throw new Error("usage: dgm skill install [--global]");
+      const src = [process.env.DGM_SKILL_DIR, resolve(here, "../../../skills/diagram-author")].find((d) => d && existsSync(join(d, "SKILL.md")));
+      if (!src) throw new Error("Skill files not found (expected skills/diagram-author next to the packages).");
+      const root = loadConfig().root;
+      const dest = args.includes("--global") ? join(homedir(), ".claude", "skills", "diagram-author") : resolve(root, ".claude", "skills", "diagram-author");
+      mkdirSync(dirname(dest), { recursive: true });
+      cpSync(src, dest, { recursive: true, force: true });
+      console.log(`Installed the diagram-author Skill to ${dest}`);
+      console.log("Restart Claude Code (or start a new session) to load it. The MCP server gives it the tools: dgm mcp config");
+      break;
+    }
+    case "mcp": {
+      if (args[0] !== "config") throw new Error("usage: dgm mcp config");
+      const server = resolve(here, "../../mcp/dist/index.js");
+      if (!existsSync(server)) throw new Error(`MCP server not built (${server}). Run: npm run build`);
+      const cfg = { mcpServers: { dgm: { command: "node", args: [server, "--root", loadConfig().root] } } };
+      console.log(JSON.stringify(cfg, null, 2));
+      console.log(`\n# Claude Code:  claude mcp add dgm -- node "${server}" --root "${loadConfig().root}"`);
+      break;
+    }
     case "render": {
       const spec = load(args[0], args.includes("--allow-missing-icons"));
       const out = flag(args, "-o") ?? flag(args, "--out");
