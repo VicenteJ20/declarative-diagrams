@@ -28,7 +28,7 @@ The output style is Distill.pub-like (pale panels, one accent, serif annotations
 |---|---|
 | **Type**: `architecture` · `flow` · `er` | infer from the content |
 | **Provider/level**: Azure · AWS · generic; which levels (tenant, subscription/account, RG, VNet/VPC, subnet, resources) | only the levels the message mentions or needs |
-| **Output**: spec file · PNG · interactive SVG · MDX snippet | spec file + PNG preview + MDX snippet |
+| **Output**: spec file · interactive SVG (+ phone SVG) · PNG · static SVG · MDX snippet | **interactive SVG + phone SVG + spec only**. The animated version is the priority: **ask once** (in the same message as any other question) "¿Quieres además PNG y/o SVG estático (sin animación)?" and default to NO. Look at your own PNG previews only as scratch (scratchpad/temp), never save them into the project unless the answer is yes |
 | **Where to save** | the project's own convention if its `AGENTS.md` has a *Diagrams* section (see 0b); otherwise `src/diagrams/<kebab-name>.diagram.yaml`, exports next to it or in `public/diagrams/` if that folder exists |
 | **Look**: theme, mode, font, aspect ratio, phone version | project default theme, `auto` mode, `mixed` font, natural aspect; **phone version (`variants.narrow`) for any diagram destined to a web page** (skip for PNG-only/slides) |
 | **Icons** | official `az-`/`aws-` when the pack is installed, else `lu-` |
@@ -45,6 +45,11 @@ component (e.g. `src/components/Diagram*`). **What the project says overrides th
 naming, which formats to export, what to pass (or not) to `dgm_render_diagram`, and the exact embed snippet. If the project documents
 nothing, use the defaults here and say so.
 
+- **Folder layout (projects that group by topic).** When the project's `AGENTS.md` says so (the portfolio does): `src/diagrams/<project-or-topic>/<lang>/editables/<diagram>.diagram.yaml`
+  (sources) and `…/<lang>/assets/<diagram>.svg`, `<diagram>.narrow.svg` (exports; `.png` / `.static.svg` only if the user asked). `<project>` is a kebab-case topic
+  (`meetpulse-desktop`), shared by all the diagrams of that post/product; reuse an existing folder instead of inventing a sibling. Embed as `name="<project>/<diagram>"`.
+- **Flow animation.** Scenarios (`steps`) can reveal box by box. The order is automatic from the arrows; add `sequence` only to override it. Which speed to use is the
+  page's choice (`stagger` prop of the embedding component, default 0 = off); mention it in your summary when the diagram has steps.
 - **Several languages** (i18n): produce one spec per language with the *same node ids* and translated labels/notes/steps/captions; ask which
   languages if it is not obvious, and say which are still pending.
 - **Integrating into a page/post — ask where, every time.** After exporting, do not place it silently. In one short message ask:

@@ -61,7 +61,7 @@ export function attach(svg: SVGSVGElement): void {
   };
 
   // ---- steps ----
-  let steps: { title: string; text?: string }[] = [];
+  let steps: { title: string; text?: string; seq?: string[][] }[] = [];
   try {
     steps = JSON.parse(svg.getAttribute("data-steps") || "[]");
   } catch {
@@ -73,7 +73,15 @@ export function attach(svg: SVGSVGElement): void {
   const prev = svg.querySelector<SVGGElement>('.btn[data-act="prev"]');
   const next = svg.querySelector<SVGGElement>('.btn[data-act="next"]');
 
-  const showStep = (k: number) => {
+  // staggered playback: the step's elements switch on group by group (see sequence.ts); timers are cancelled by any new call
+  let timers: number[] = [];
+  const cancel = () => {
+    timers.forEach((t) => clearTimeout(t));
+    timers = [];
+    svg.querySelectorAll(".now").forEach((e) => e.classList.remove("now"));
+  };
+  const showStep = (k: number, opts?: { stagger?: number; onGroup?: (ids: string[], i: number, n: number) => void }) => {
+    cancel();
     step = Math.max(-1, Math.min(steps.length - 1, k));
     pinned = "";
     if (step < 0) clear();
@@ -83,15 +91,31 @@ export function attach(svg: SVGSVGElement): void {
         const s = (e.dataset.steps || "").split(",");
         if (s.includes(String(step))) hl.add(e.dataset.id!);
       });
-      apply(hl);
+      const seq = steps[step].seq;
+      const gap = (opts?.stagger ?? 0) * 1000;
+      if (gap > 0 && seq && seq.length > 1) {
+        const lit = new Set<string>();
+        apply(lit); // everything dimmed, then the groups light up in order and stay lit
+        seq.forEach((group, i) => {
+          const reveal = () => {
+            svg.querySelectorAll(".now").forEach((e) => e.classList.remove("now"));
+            group.forEach((id) => lit.add(id));
+            apply(lit);
+            group.forEach((id) => byId.get(id)?.classList.add("now"));
+            opts?.onGroup?.(group, i, seq.length);
+          };
+          if (i === 0) reveal();
+          else timers.push(window.setTimeout(reveal, i * gap));
+        });
+      } else apply(hl);
     }
     if (label) label.textContent = step < 0 ? `Overview · ${steps.length} steps` : `${step + 1}/${steps.length} · ${steps[step].title}`;
     prev?.classList.toggle("off", step < 0);
     next?.classList.toggle("off", step >= steps.length - 1);
   };
   if (steps.length) showStep(-1);
-  // small public API so a host page can drive the steps with its own controls: svg.dgm.show(k) (-1 = overview)
-  w.dgm = { show: showStep, steps: () => steps, current: () => step };
+  // small public API so a host page can drive the steps with its own controls: svg.dgm.show(k, { stagger?: seconds, onGroup? }) (-1 = overview)
+  w.dgm = { show: showStep, steps: () => steps, current: () => step, cancel };
 
   // ---- tooltip ----
   const NS = "http://www.w3.org/2000/svg";

@@ -86,6 +86,10 @@ Full reference: `get_authoring_guide topic=spec`.
   Fold side branches with **`stackWith: <id>`** — same step as the anchor, stacked *below* it (flow `RIGHT`) or *beside* it (flow
   `DOWN`) — instead of letting every node take its own column. Use `badge: 1…n` for the reading order and `legend` for solid vs
   dashed edges instead of long notes. `render_diagram` reports the size and a `LAYOUT NOTE` when the proportions are poor: act on it.
+- **Flow animation (reveal order).** A `steps[]` scenario can be played "box by box" by the host page (`svg.dgm.show(k, { stagger: 1.5 })`,
+  `Diagram.astro`'s `stagger` prop; 0 = off, the default). The order is **automatic** (inputs first, following the arrows; each edge lights with the node it
+  arrives at). Only declare `sequence` when the arrows are not enough: groups lit in order, a list = lit together, e.g.
+  `sequence: [capture, whisper, [sqlite, embeddings], insights]`. Give every scenario a coherent `show` list; the order is derived from the shown subgraph.
 - **Layout**: `RIGHT` for left-to-right pipelines, `DOWN` for layered/flow diagrams.
 - **Phone version (`variants.narrow`) — add it to every wide diagram that goes on a web page.** Phones are ~360 px wide, so a 1400 px
   canvas shows 12 px labels at ~3 px. The narrow variant is a second, VERTICAL render of the same spec (same ids, so steps, hover and

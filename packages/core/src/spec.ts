@@ -85,6 +85,11 @@ const StepSchema = z
     text: z.string().optional(),
     /** Node / edge ids highlighted in this step. */
     show: z.array(z.string()).min(1),
+    /**
+     * Optional reveal order when a host plays the step with a stagger: groups of ids lit one after another, e.g.
+     * `[capture, transcribe, [storage, embeddings], insights]`. Omit it: the order follows the arrows (inputs first).
+     */
+    sequence: z.array(z.union([z.string(), z.array(z.string())])).optional(),
   })
   .strict();
 
@@ -180,7 +185,13 @@ export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | n
   const touchesHidden = (id: string) => id.split("->").some((part) => hide.has(part.split("#")[0]));
   const edges = spec.edges.filter((e) => !hide.has(e.from) && !hide.has(e.to));
   const steps = spec.steps
-    .map((s) => ({ ...s, show: s.show.filter((id) => !touchesHidden(id)) }))
+    .map((s) => ({
+      ...s,
+      show: s.show.filter((id) => !touchesHidden(id)),
+      sequence: s.sequence
+        ?.map((g) => (Array.isArray(g) ? g.filter((id) => !touchesHidden(id)) : touchesHidden(g) ? [] : g))
+        .filter((g) => (Array.isArray(g) ? g.length > 0 : true)),
+    }))
     .filter((s) => s.show.length > 0);
   return {
     ...spec,
@@ -303,6 +314,13 @@ export function validateSpec(input: unknown, vopts: ValidateOptions = {}): Valid
       if (!known(id)) errors.push(`steps.${i}.show.${j}: unknown node/edge "${id}"`);
     }),
   );
+  spec.steps.forEach((s, i) =>
+    s.sequence?.forEach((g, j) =>
+      (Array.isArray(g) ? g : [g]).forEach((id) => {
+        if (!known(id)) errors.push(`steps.${i}.sequence.${j}: unknown node/edge "${id}"`);
+      }),
+    ),
+  );
 
   return { ok: errors.length === 0, spec, errors, warnings };
 }
@@ -419,6 +437,11 @@ export function specJsonSchema(): unknown {
             title: { type: "string" },
             text: { type: "string" },
             show: { type: "array", minItems: 1, items: { type: "string" } },
+            sequence: {
+              type: "array",
+              description: "reveal order for staggered playback: ids or lists of ids lit together; default = follows the arrows",
+              items: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] },
+            },
           },
         },
       },

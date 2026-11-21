@@ -49,7 +49,9 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
     : `
 .dgm .edge .pkt{fill:none;stroke:${v("flow")};stroke-width:3;stroke-linecap:round;stroke-dasharray:0.1 14;animation:dgm-flow 1.1s linear infinite}
 @keyframes dgm-flow{to{stroke-dashoffset:-14.1}}
-.dgm .el{transition:opacity .15s}
+.dgm .el{transition:opacity .3s}
+.dgm .el.now{animation:dgm-now 1.2s ease-out}
+@keyframes dgm-now{0%{filter:drop-shadow(0 0 7px ${v("accent")})}100%{filter:drop-shadow(0 0 0 transparent)}}
 .dgm .node,.dgm .cont,.dgm .edge{cursor:pointer}
 .dgm.dim .el:not(.hl):not(.ctx){opacity:.16}
 .dgm.dim .note-g,.dgm.dim .leader{opacity:.5}
