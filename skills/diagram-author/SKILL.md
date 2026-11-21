@@ -103,6 +103,9 @@ Full reference: `get_authoring_guide topic=spec`.
         storage: { label: SQLite, sublabel: local data }   # shorter text
       hide: [legend-only-node]   # drop secondary nodes (their edges/notes/step entries go too)
   ```
+  Nested containers make ugly phone layouts (edges loop around siblings, one tall column). Collapse them for the phone: `hide` the children and give the
+  container the merged text (`data: { label: Data, sublabel: SQLite · FTS5 }`) so it becomes one box; then `stackWith` such boxes side by side to avoid skip-edges.
+  (`stackWith` members must be leaf boxes: a container with visible children cannot be stacked.)
   Goal: **canvas ≤ 520 px wide** (one or two nodes per row; stacks `stackWith` are the usual reason for 3+). Render it with
   `dgm_render_diagram variant=narrow` and LOOK at it: the report says `phone view` and warns when the width is too big. Export both:
   wide → `<name>.<lang>.svg`, phone → `<name>.<lang>.narrow.svg` (`variant=narrow`, `format=svg`, `save_to`). Keep the same node ids
