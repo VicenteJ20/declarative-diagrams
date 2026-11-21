@@ -29,12 +29,31 @@ The output style is Distill.pub-like (pale panels, one accent, serif annotations
 | **Type**: `architecture` · `flow` · `er` | infer from the content |
 | **Provider/level**: Azure · AWS · generic; which levels (tenant, subscription/account, RG, VNet/VPC, subnet, resources) | only the levels the message mentions or needs |
 | **Output**: spec file · PNG · interactive SVG · MDX snippet | spec file + PNG preview + MDX snippet |
-| **Where to save** | `src/diagrams/<kebab-name>.diagram.yaml`; exports next to it or in `public/diagrams/` if that folder exists |
+| **Where to save** | the project's own convention if its `AGENTS.md` has a *Diagrams* section (see 0b); otherwise `src/diagrams/<kebab-name>.diagram.yaml`, exports next to it or in `public/diagrams/` if that folder exists |
 | **Look**: theme, mode, font, aspect ratio, narrow variant | project default theme, `auto` mode, `mixed` font, natural aspect, no variant |
 | **Icons** | official `az-`/`aws-` when the pack is installed, else `lu-` |
 | **Audience/detail** | whoever reads the docs; ≤ 15 nodes |
 
 3. **Ask only if something blocks you** — one message, at most 4 short questions, each with the default you will use if they do not answer (e.g. "¿Azure o AWS? (si no dices nada: Azure)"). Typical blockers: provider unknown for a cloud diagram, an ambiguous scope ("toda la plataforma"), a requested output you cannot tell, or contradictory instructions. Otherwise **state your assumptions in one line and proceed**.
+
+## 0b. Project conventions and where to integrate
+
+The project you are opened in may define how diagrams are stored, named, themed and shown (a site with its own component, several
+languages, a default theme…). **Before you pick paths, names, theme or the embed snippet, look for it** (`read`/`glob`):
+`AGENTS.md` (a *Diagrams* section), `README.md`, `dgm.config.json` (default theme), `src/diagrams/` or similar, and an existing diagram
+component (e.g. `src/components/Diagram*`). **What the project says overrides the defaults in sections 0 and 5** — file locations, `<name>.<lang>`
+naming, which formats to export, what to pass (or not) to `dgm_render_diagram`, and the exact embed snippet. If the project documents
+nothing, use the defaults here and say so.
+
+- **Several languages** (i18n): produce one spec per language with the *same node ids* and translated labels/notes/steps/captions; ask which
+  languages if it is not obvious, and say which are still pending.
+- **Integrating into a page/post — ask where, every time.** After exporting, do not place it silently. In one short message ask:
+  (1) which file, and (2) where: a **line number**, "after the heading X", or "replace figure Y". If the user already said, use it. If they have
+  no preference, propose 1–2 concrete spots (quote the heading/paragraph) and let them pick. Do the same for the other language's file.
+- Edit **only after they confirm**; change nothing else in that file; keep existing prose, images and legacy diagrams (webp, Mermaid) unless asked to replace them;
+  add the `import` once at the top with the others, and reuse it.
+- Afterwards run the project's check from its `AGENTS.md` (typically `npm run build`), fix errors, and tell the user which URL/page to open and what to
+  try (hover, click-to-pin, steps, dark mode, a narrow window).
 
 ## 1. Inputs you accept
 
@@ -143,7 +162,7 @@ and check the numbers: `dgm_render_diagram` prints `Canvas W×H px (A:1)` and a 
 | "vertical" / "horizontal" | `direction: DOWN|RIGHT` |
 | "agrégale pasos / animación" | `steps` and `flow: true` on the main path |
 
-MDX snippet to give:
+MDX snippet to give (default, for sites using `@dgm/react`; **if the project's `AGENTS.md` defines another component or import path, use that one**):
 
 ```mdx
 import { Diagram } from "@dgm/react";
@@ -179,5 +198,5 @@ Keep it short and concrete:
 
 - **Files**: paths of the spec and each export.
 - **What it shows**: one sentence + the assumptions you made (and anything you left out).
-- **How to use it**: the MDX snippet or the command to re-render (`dgm render <file> -o <out>`).
+- **How to use it**: the embed snippet from the project's conventions (or the default MDX one) and where it was / should be placed; the command to re-render (`dgm render <file> -o <out>`).
 - **Next options**: 2–3 relevant tweaks (a theme, a narrow variant, adding steps, splitting detail).

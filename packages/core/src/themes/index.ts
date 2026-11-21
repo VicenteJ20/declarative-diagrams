@@ -80,6 +80,20 @@ function flatten(o: TokenOverlay | undefined): TokenMap {
 
 const registry = new Map<string, ThemeDef>();
 export const registerTheme = (def: ThemeDef) => void registry.set(def.name, def);
+
+/** Theme used when neither the render options nor the spec name one (set from `dgm.config.json`). */
+let defaultThemeName = "distill";
+export const getDefaultTheme = () => defaultThemeName;
+/** Unknown or empty names fall back to `distill`. Returns false when the name is unknown. */
+export function setDefaultTheme(name?: string): boolean {
+  if (!name) {
+    defaultThemeName = "distill";
+    return true;
+  }
+  const ok = registry.has(name);
+  defaultThemeName = ok ? name : "distill";
+  return ok;
+}
 export const listThemes = () => [...registry.values()];
 export const hasTheme = (name: string) => registry.has(name);
 

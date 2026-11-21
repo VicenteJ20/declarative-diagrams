@@ -203,3 +203,30 @@ describe("badges and legend", () => {
     expect(h(b)).toBe(h(a) + 36);
   });
 });
+
+describe("default theme from dgm.config.json", () => {
+  it("applies when nothing else names a theme, and resets for a project without it", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { loadConfig, resolveTheme } = await import("./index.js");
+    const proj = mkdtempSync(join(tmpdir(), "dgm-cfg-"));
+    const other = mkdtempSync(join(tmpdir(), "dgm-cfg-none-"));
+    mkdirSync(join(proj, "themes"));
+    writeFileSync(join(proj, "themes", "brand.theme.yaml"), "name: brand-cfg\nextends: distill\nlight:\n  accent: '#123456'\n");
+    writeFileSync(join(proj, "dgm.config.json"), JSON.stringify({ themes: ["themes/*.theme.yaml"], theme: "brand-cfg" }));
+    const spec = validateSpec({ nodes: [{ id: "a", label: "A" }] }).spec!;
+
+    loadConfig(proj);
+    expect(await renderSvg(spec, { static: true })).toContain("#123456");
+    // explicit theme (option or spec) still wins
+    expect(await renderSvg(spec, { static: true, theme: "olive" })).not.toContain("#123456");
+    expect(await renderSvg({ ...spec, theme: "olive" }, { static: true })).not.toContain("#123456");
+
+    loadConfig(other); // another project without a config: back to distill
+    expect(await renderSvg(spec, { static: true })).not.toContain("#123456");
+    expect(resolveTheme("brand-cfg").light.accent).toBe("#123456"); // still registered, just not the default
+    rmSync(proj, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
+  });
+});

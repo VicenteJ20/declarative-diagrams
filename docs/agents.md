@@ -116,6 +116,13 @@ Skill and the `dgm_*` tools:
 - **Outputs**: spec file, PNG, interactive or static SVG, MDX snippet, themes — with aspect ratio, mode, font and narrow variant.
 - **Permissions**: all `dgm_*` tools allowed except `dgm_update_icons` (asks); file edits and shell commands ask, except `dgm` CLI calls.
 
+**Project conventions.** The agent reads the project's own `AGENTS.md` (a *Diagrams* section), `dgm.config.json` and any existing diagram
+component *before* choosing paths, names, theme or the embed snippet — what the project says overrides its defaults — and it **asks where
+to integrate** (file + line, or "after heading X") before editing a page. `dgm.config.json` can set the project's default theme
+(`{ "themes": ["themes/*.theme.yaml"], "theme": "my-brand" }`), so diagrams come out on-brand without passing parameters. For a static site that
+should not depend on dgm at build time, export the interactive SVG + PNG into the repo and show the SVG with a small component that inlines it
+(an Astro example: the portfolio's `src/components/Diagram.astro`).
+
 Install it in another project (it also needs the MCP server and the Skill):
 
 ```powershell

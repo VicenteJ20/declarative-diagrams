@@ -1,12 +1,12 @@
 import { existsSync, readFileSync, globSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
 import YAML from "yaml";
-import { registerTheme, ThemeDef } from "./themes/index.js";
+import { registerTheme, setDefaultTheme, ThemeDef } from "./themes/index.js";
 import { parseThemeDef } from "./themes/schema.js";
 import { configureIcons } from "./icons/store.js";
 
 export interface ProjectConfig {
-  /** Default theme name for the project. */
+  /** Default theme for every diagram of the project (used when neither the render options nor the spec set one). */
   theme?: string;
   /** Globs (relative to the config file) of `*.theme.yaml|json` files to register. */
   themes?: string[];
@@ -55,5 +55,6 @@ export function loadConfig(start: string = process.cwd()): LoadedConfig {
       themes.push(def);
     }
   }
+  if (!setDefaultTheme(config.theme)) console.warn(`[dgm] dgm.config.json: unknown theme "${config.theme}" — using distill`);
   return { root, file, config, themes };
 }

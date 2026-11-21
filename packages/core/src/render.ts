@@ -3,7 +3,7 @@ import { Layout, LEdge, Pt, layoutSpec, ENTITY_HEAD, ENTITY_ROW } from "./layout
 import { kindOf } from "./kinds.js";
 import { nodeIcon, IconEmitter, diagramNs, STACK_ICON, CARD_ICON, HEAD_ICON } from "./icons/index.js";
 import { css } from "./theme.js";
-import { Mode, isMode, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme, FontMode } from "./themes/index.js";
+import { Mode, isMode, getDefaultTheme, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme, FontMode } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
 
 export interface RenderOptions {
@@ -80,10 +80,10 @@ export async function renderSvg(spec: DiagramSpec, opts: RenderOptions = {}): Pr
 /** Precedence: render option > spec > default. `theme: "dark"` (legacy) is read as a mode. */
 export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { theme: ResolvedTheme; mode: Mode; font: FontMode } {
   let mode: Mode = opts.mode ?? "auto";
-  let themeInput: RenderOptions["theme"] = opts.theme ?? spec.theme ?? "distill";
+  let themeInput: RenderOptions["theme"] = opts.theme ?? spec.theme ?? getDefaultTheme();
   if (typeof themeInput === "string" && isMode(themeInput)) {
     if (!opts.mode) mode = themeInput;
-    themeInput = spec.theme ?? "distill";
+    themeInput = spec.theme ?? getDefaultTheme();
   }
   const theme = applyPalette(resolveTheme(themeInput), { ...(spec.palette ?? {}), ...(opts.palette ?? {}) });
   return { theme, mode, font: opts.font ?? spec.font ?? theme.font ?? "mixed" };
