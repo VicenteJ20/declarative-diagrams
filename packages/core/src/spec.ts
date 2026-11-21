@@ -102,11 +102,27 @@ export const SpecSchema = z
     palette: z.record(z.unknown()).optional(),
     /** Where notes go: a margin gutter (default) or a numbered list under the diagram. */
     notesPosition: z.enum(["side", "below"]).default("side"),
-    /** Author-defined alternative layouts. Never applied automatically; `<Diagram narrowBelow>` opts in. */
+    /**
+     * Author-defined alternative layouts. `narrow` is the PHONE version: vertical flow, optional content patches
+     * (shorter labels, un-stacked nodes, hidden nodes). Rendered separately (`--variant narrow`); the host page picks it on small screens.
+     */
     variants: z
       .object({
         narrow: z
-          .object({ direction: z.enum(["RIGHT", "DOWN"]).optional(), notesPosition: z.enum(["side", "below"]).optional() })
+          .object({
+            direction: z.enum(["RIGHT", "DOWN"]).optional(),
+            notesPosition: z.enum(["side", "below"]).optional(),
+            /** Node ids dropped from the phone version (edges, notes and step entries that touch them go too). */
+            hide: z.array(z.string()).optional(),
+            /** Per-node overrides for the phone version, keyed by node id. `stackWith: null` un-stacks the node (own row). */
+            nodes: z
+              .record(
+                z
+                  .object({ label: z.string().optional(), sublabel: z.string().optional(), stackWith: z.string().nullable().optional() })
+                  .strict(),
+              )
+              .optional(),
+          })
           .strict()
           .optional(),
       })
@@ -136,11 +152,46 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-/** Spec for a named variant (`narrow`): its overrides applied, defaulting to a vertical layout with notes below. */
+/**
+ * Spec for a named variant (`narrow`): its overrides applied. Defaults to a vertical layout with notes below.
+ * `nodes` patches label/sublabel/stackWith per id; `hide` removes nodes (and the edges, notes and step entries that touch them).
+ */
 export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | null {
   const v = spec.variants?.[name];
   if (!v) return null;
-  return { ...spec, direction: v.direction ?? "DOWN", notesPosition: v.notesPosition ?? "below", variants: undefined };
+  const hide = new Set(v.hide ?? []);
+  const patch = v.nodes ?? {};
+  const mapNodes = (list: NodeSpec[]): NodeSpec[] =>
+    list
+      .filter((n) => !hide.has(n.id))
+      .map((n) => {
+        const p = patch[n.id];
+        const out: NodeSpec = { ...n };
+        if (p) {
+          if (p.label !== undefined) out.label = p.label;
+          if (p.sublabel !== undefined) out.sublabel = p.sublabel;
+          if (p.stackWith === null) delete out.stackWith;
+          else if (p.stackWith !== undefined) out.stackWith = p.stackWith;
+        }
+        if (out.stackWith && hide.has(out.stackWith)) delete out.stackWith;
+        if (n.children) out.children = mapNodes(n.children);
+        return out;
+      });
+  const touchesHidden = (id: string) => id.split("->").some((part) => hide.has(part.split("#")[0]));
+  const edges = spec.edges.filter((e) => !hide.has(e.from) && !hide.has(e.to));
+  const steps = spec.steps
+    .map((s) => ({ ...s, show: s.show.filter((id) => !touchesHidden(id)) }))
+    .filter((s) => s.show.length > 0);
+  return {
+    ...spec,
+    direction: v.direction ?? "DOWN",
+    notesPosition: v.notesPosition ?? "below",
+    nodes: mapNodes(spec.nodes),
+    edges,
+    notes: spec.notes.filter((n) => !touchesHidden(n.target)),
+    steps,
+    variants: undefined,
+  };
 }
 
 export function parseSpecText(text: string): unknown {
@@ -309,7 +360,20 @@ export function specJsonSchema(): unknown {
           narrow: {
             type: "object",
             additionalProperties: false,
-            properties: { direction: { enum: ["RIGHT", "DOWN"] }, notesPosition: { enum: ["side", "below"] } },
+            description: "Phone version: vertical by default. `hide` drops nodes; `nodes.<id>` overrides label/sublabel/stackWith (null = un-stack).",
+            properties: {
+              direction: { enum: ["RIGHT", "DOWN"] },
+              notesPosition: { enum: ["side", "below"] },
+              hide: { type: "array", items: { type: "string" } },
+              nodes: {
+                type: "object",
+                additionalProperties: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: { label: { type: "string" }, sublabel: { type: "string" }, stackWith: { type: ["string", "null"] } },
+                },
+              },
+            },
           },
         },
       },

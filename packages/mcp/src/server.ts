@@ -441,7 +441,7 @@ export function createServer(opts: ServerOptions): McpServer {
         let spec = res.spec!;
         if (a.variant) {
           const v = applyVariant(spec, a.variant);
-          if (!v) return fail("This spec has no `variants.narrow`. Add `variants: { narrow: {} }` to define one.");
+          if (!v) return fail("This spec has no `variants.narrow`. Add `variants: { narrow: {} }` to define one (optionally `hide: [ids]` and `nodes: { <id>: { label, sublabel, stackWith: null } }`).");
           spec = v;
         }
         const ro = { theme: a.theme, mode: a.mode as Mode | undefined, font: a.font, aspect: parseAspect(a.aspect), padding: a.padding };
@@ -456,7 +456,7 @@ export function createServer(opts: ServerOptions): McpServer {
             writeFileSync(f, png);
             saved = ` Saved to ${relative(root, f)}.`;
           }
-          const adv = canvasAdvice(pngSize(png).width, pngSize(png).height);
+          const adv = canvasAdvice(pngSize(png).width, pngSize(png).height, a.variant ? (a.scale ?? 2) : false);
           const advText = `${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}`;
           return { content: [{ type: "text", text: `Rendered PNG (${Math.round(png.length / 1024)} KB). ${advText}${saved}${warn}` }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] as Content[] };
         }
@@ -466,7 +466,7 @@ export function createServer(opts: ServerOptions): McpServer {
           mkdirSync(dirname(f), { recursive: true });
           writeFileSync(f, svg);
           const sz = svgSize(svg);
-          const adv = sz ? canvasAdvice(sz.width, sz.height) : null;
+          const adv = sz ? canvasAdvice(sz.width, sz.height, !!a.variant) : null;
           return text(`Rendered SVG (${Math.round(svg.length / 1024)} KB) → ${relative(root, f)}${a.static ? "" : " (interactive: embed inline, <object> or via <Diagram>; <img> loses the script)"}.${adv ? ` ${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}` : ""}${warn}`);
         }
         return text(svg.length > 200_000 ? `SVG is ${Math.round(svg.length / 1024)} KB — pass save_to to write it to a file instead.` : svg + warn);

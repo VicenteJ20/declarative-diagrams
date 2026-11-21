@@ -51,3 +51,27 @@ describe("aspect, padding, notes position, variants", () => {
     expect(validateSpec({ ...base, variants: { tiny: {} } }).ok).toBe(false);
   });
 });
+
+describe("variants.narrow patches", () => {
+  it("un-stacks, relabels and hides nodes for the phone version", () => {
+    const res = validateSpec(
+      {
+        direction: "RIGHT",
+        variants: { narrow: { hide: ["c"], nodes: { b: { stackWith: null, label: "B2" } } } },
+        nodes: [{ id: "a", label: "A" }, { id: "b", label: "B", stackWith: "a" }, { id: "c", label: "C" }],
+        edges: [{ from: "a", to: "b" }, { from: "b", to: "c" }],
+        notes: [{ text: "x", target: "c" }],
+        steps: [{ title: "s", show: ["a", "c", "b->c"] }, { title: "only c", show: ["c"] }],
+      }
+    );
+    expect(res.ok).toBe(true);
+    const v = applyVariant(res.spec!, "narrow")!;
+    expect(v.direction).toBe("DOWN");
+    expect(v.nodes.map((n) => n.id)).toEqual(["a", "b"]);
+    expect(v.nodes[1].stackWith).toBeUndefined();
+    expect(v.nodes[1].label).toBe("B2");
+    expect(v.edges).toHaveLength(1);
+    expect(v.notes).toHaveLength(0);
+    expect(v.steps).toEqual([{ title: "s", show: ["a"] }]);
+  });
+});

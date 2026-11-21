@@ -86,8 +86,23 @@ Full reference: `get_authoring_guide topic=spec`.
   Fold side branches with **`stackWith: <id>`** — same step as the anchor, stacked *below* it (flow `RIGHT`) or *beside* it (flow
   `DOWN`) — instead of letting every node take its own column. Use `badge: 1…n` for the reading order and `legend` for solid vs
   dashed edges instead of long notes. `render_diagram` reports the size and a `LAYOUT NOTE` when the proportions are poor: act on it.
-- **Layout**: `RIGHT` for left-to-right pipelines, `DOWN` for layered/flow diagrams. For phones, add
-  `variants: { narrow: {} }` (vertical, notes below) — only used when the page opts in.
+- **Layout**: `RIGHT` for left-to-right pipelines, `DOWN` for layered/flow diagrams.
+- **Phone version (`variants.narrow`) — add it to every wide diagram that goes on a web page.** Phones are ~360 px wide, so a 1400 px
+  canvas shows 12 px labels at ~3 px. The narrow variant is a second, VERTICAL render of the same spec (same ids, so steps, hover and
+  tooltips behave identically):
+  ```yaml
+  variants:
+    narrow:
+      direction: DOWN            # default
+      nodes:                     # per-node overrides, only on the phone version
+        mai: { stackWith: null } # un-stack: its own row instead of sitting beside others
+        storage: { label: SQLite, sublabel: local data }   # shorter text
+      hide: [legend-only-node]   # drop secondary nodes (their edges/notes/step entries go too)
+  ```
+  Goal: **canvas ≤ 520 px wide** (one or two nodes per row; stacks `stackWith` are the usual reason for 3+). Render it with
+  `dgm_render_diagram variant=narrow` and LOOK at it: the report says `phone view` and warns when the width is too big. Export both:
+  wide → `<name>.<lang>.svg`, phone → `<name>.<lang>.narrow.svg` (`variant=narrow`, `format=svg`, `save_to`). Keep the same node ids
+  and step order in every language.
 
 ## Themes and mode
 

@@ -211,7 +211,9 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       const cx = nd.x + nd.w / 2;
       // tone: card nodes tint their badge; flat shapes (pill/diamond/plain/entity) tint the whole shape
       const tn = nd.spec.tone && k.shape ? ` tn-${nd.spec.tone}` : "";
-      const open = `<g class="el node${tn}" tabindex="0" ${common}>`;
+      // focusable => needs an interactive role (a11y audits flag tabindex on a plain <g>)
+      const aria = `role="button" aria-label="${esc(nd.spec.label)}"`;
+      const open = `<g class="el node${tn}" tabindex="0" ${aria} ${common}>`;
       const box = (rx: number) =>
         `<rect x="${n(nd.x)}" y="${n(nd.y)}" width="${n(nd.w)}" height="${n(nd.h)}" rx="${rx}"/>`;
       const centered = () =>
@@ -221,7 +223,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       if (ic && ic.variant === "stacked") {
         const iy = nd.y + 8;
         nodeSvg +=
-          `<g class="el node stacked${tn}" tabindex="0" ${common}>` +
+          `<g class="el node stacked${tn}" tabindex="0" ${aria} ${common}>` +
           box(8) +
           icons.use(ic.res, cx - STACK_ICON / 2, iy, STACK_ICON) +
           `<text class="head" text-anchor="middle" x="${n(cx)}" y="${n(iy + STACK_ICON + 16)}">${esc(nd.spec.label)}</text>` +
@@ -341,8 +343,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     const sy = layout.height + titleH + notesH + legendH + 8;
     stepper =
       `<g class="stepper" transform="translate(0 ${sy})">` +
-      `<g class="btn" data-act="prev" tabindex="0"><rect x="0" y="0" width="26" height="24" rx="5"/><text x="13" y="16.5">‹</text></g>` +
-      `<g class="btn" data-act="next" tabindex="0"><rect x="32" y="0" width="26" height="24" rx="5"/><text x="45" y="16.5">›</text></g>` +
+      `<g class="btn" data-act="prev" tabindex="0" role="button" aria-label="Previous step"><rect x="0" y="0" width="26" height="24" rx="5"/><text x="13" y="16.5">‹</text></g>` +
+      `<g class="btn" data-act="next" tabindex="0" role="button" aria-label="Next step"><rect x="32" y="0" width="26" height="24" rx="5"/><text x="45" y="16.5">›</text></g>` +
       `<text class="step-label" x="70" y="16"></text></g>`;
   }
 
@@ -370,7 +372,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     !isStatic && opts.embedRuntime !== false ? `<script><![CDATA[${RUNTIME_SOURCE}]]></script>` : "";
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="dgm" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"${themeAttr}${dataSteps}>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="dgm" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="${isStatic ? "img" : "group"}" aria-label="${esc(spec.title ?? "Diagram")}"${themeAttr}${dataSteps}>` +
     `<title>${esc(spec.title ?? "Diagram")}</title>` +
     (spec.description ? `<desc>${esc(spec.description)}</desc>` : "") +
     `<defs>` +

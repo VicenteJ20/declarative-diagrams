@@ -14,7 +14,7 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `palette` | token overrides: `{ accent: "#…", dark: { accent: "#…" }, tones: { data: "#…" } }` |
 | `legend` | compact key under the diagram: `[{ style: solid, label: Inside }, { style: dashed, label: Optional }]` |
 | `notesPosition` | `side` (margin gutter, default) or `below` (numbered list under the diagram) |
-| `variants.narrow` | optional vertical layout for narrow screens: `{ direction?: DOWN, notesPosition?: below }`; `{}` = both defaults |
+| `variants.narrow` | phone version (rendered separately with `variant=narrow`): `{ direction?: DOWN, notesPosition?: below, hide?: [ids], nodes?: { <id>: { label?, sublabel?, stackWith?: <id> \| null } } }`; `{}` = vertical + notes below. `stackWith: null` un-stacks a node; `hide` drops nodes and the edges/notes/step entries that touch them. Aim for ≤ 520 px wide. |
 | `nodes` | list of nodes (required) |
 | `edges`, `notes`, `steps` | optional lists |
 

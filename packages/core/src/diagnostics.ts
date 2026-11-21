@@ -12,10 +12,24 @@ export interface CanvasAdvice {
 export const WIDE_LIMIT = 3.5;
 export const TALL_LIMIT = 0.45;
 
-export function canvasAdvice(width: number, height: number): CanvasAdvice {
+/** Widest phone canvas that still keeps 12 px labels readable (≈ 0.75× on a 390 px screen → ~9 px). */
+export const PHONE_MAX_WIDTH = 520;
+
+/** `phone`: the canvas is the `variants.narrow` version — judge it by width (readability on a phone), not by ratio. A number = the PNG pixel scale to divide out. */
+export function canvasAdvice(width: number, height: number, phone: boolean | number = false): CanvasAdvice {
   const aspect = width / height;
   const text = `Canvas ${Math.round(width)}×${Math.round(height)} px (${aspect.toFixed(1)}:1)`;
   let hint: string | undefined;
+  if (phone) {
+    const nat = width / (typeof phone === "number" ? phone : 1);
+    const scale = Math.min(1, 360 / nat);
+    if (nat > PHONE_MAX_WIDTH)
+      hint =
+        `Too wide for a phone: on a 360 px screen it shows at ${Math.round(scale * 100)}% (12 px labels → ${(12 * scale).toFixed(1)} px). Aim for ≤ ${PHONE_MAX_WIDTH} px wide: ` +
+        "in `variants.narrow.nodes` set `stackWith: null` on nodes that sit beside others (one per row where possible), shorten `label`/`sublabel`, " +
+        "or `hide` secondary nodes.";
+    return { width, height, aspect, text: `${text} — phone view`, hint };
+  }
   if (aspect > WIDE_LIMIT)
     hint =
       "Very wide for a page column (comfortable range ≈ 1.5–3.5:1). Fold branches that leave the main flow with `stackWith: <id>` " +

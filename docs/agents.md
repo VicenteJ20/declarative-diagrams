@@ -123,6 +123,8 @@ to integrate** (file + line, or "after heading X") before editing a page. `dgm.c
 should not depend on dgm at build time, export the interactive SVG + PNG into the repo and show the SVG with a small component that inlines it
 (an Astro example: the portfolio's `src/components/Diagram.astro`).
 
+Steps become real buttons + autoplay in the portfolio component: the runtime exposes `svg.dgm.show(k)` (-1 = overview) so a host page can drive them; the SVG nodes carry `tabindex`/`role="button"` for standalone use, which a host with Astro's audit may strip.
+
 Install it in another project (it also needs the MCP server and the Skill):
 
 ```powershell

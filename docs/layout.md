@@ -19,9 +19,20 @@ A diagram is never re-oriented automatically (a horizontal architecture does not
 ```yaml
 variants:
   narrow: {}                 # defaults: direction DOWN, notesPosition below
-  # narrow: { direction: DOWN, notesPosition: below }
+  # narrow:
+  #   direction: DOWN
+  #   notesPosition: below
+  #   hide: [debug-node]                       # dropped on phones (edges, notes, step entries that touch it go too)
+  #   nodes:
+  #     mai: { stackWith: null }               # un-stack: own row (the usual fix for a too-wide phone canvas)
+  #     storage: { label: SQLite, sublabel: local }   # shorter text on phones
 notesPosition: side          # or below
 ```
+
+Design the phone version for **≤ 520 px of canvas width** (on a 360 px screen a 1400 px canvas shows 12 px labels at 3 px).
+`dgm render … --variant narrow` (or `dgm_render_diagram variant=narrow`) reports `phone view` and warns when it is too wide.
+Sites that inline SVGs export it next to the wide one (`<name>.<lang>.narrow.svg`) and swap them with a media query; the portfolio's
+`Diagram.astro` does this automatically.
 
 ```mdx
 import arch, { narrow } from "./arch.diagram.yaml";

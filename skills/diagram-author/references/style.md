@@ -26,7 +26,7 @@ job is the *content and structure*.
 - [ ] Do edge labels say protocol/port/verb, not repeat the node names?
 - [ ] Icons are official for cloud resources and consistent (don't mix `card` and `stacked` styles arbitrarily).
 - [ ] Dark mode: `render_diagram mode=dark` also looks right?
-- [ ] Narrow screens: is a `variants.narrow` needed? (wide `RIGHT` diagrams with many columns: yes)
+- [ ] Phone: `variants.narrow` present, rendered with `variant=narrow`, ≤ 520 px wide (the report says `phone view`), exported as `<name>.<lang>.narrow.svg`?
 
 ## Fixing common problems
 
@@ -34,6 +34,7 @@ job is the *content and structure*.
 |---|---|
 | Very wide / elongated (> 3.5 : 1) | fold branches with `stackWith` (below the anchor); put the optional/offline path in the stack; shorten notes and keep `notesPosition: side`; `direction: DOWN`; split |
 | Very wide diagram | `direction: DOWN`, or split; add `variants: { narrow: {} }` |
+| Phone view too wide (> 520 px) | in `variants.narrow.nodes` set `stackWith: null` on side-by-side nodes, shorten labels, or `hide` secondary nodes |
 | Edge snakes around a container | connect to the node next to the border; or move the node into the container it talks to |
 | Cluttered middle | remove obvious edges (everything→monitoring): say it in a note |
 | Label collides with a line | shorten the label; labels sit on the edge midpoint |

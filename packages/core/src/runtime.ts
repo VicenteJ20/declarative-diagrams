@@ -90,6 +90,8 @@ export function attach(svg: SVGSVGElement): void {
     next?.classList.toggle("off", step >= steps.length - 1);
   };
   if (steps.length) showStep(-1);
+  // small public API so a host page can drive the steps with its own controls: svg.dgm.show(k) (-1 = overview)
+  w.dgm = { show: showStep, steps: () => steps, current: () => step };
 
   // ---- tooltip ----
   const NS = "http://www.w3.org/2000/svg";

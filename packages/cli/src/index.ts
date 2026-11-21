@@ -382,18 +382,20 @@ async function main() {
         target = v;
       }
       let size: { width: number; height: number } | null = null;
+      let pxScale = 1;
       mkdirSync(dirname(out), { recursive: true });
       if (extname(out).toLowerCase() === ".png") {
         const scale = Number(flag(args, "--scale") ?? 2);
         const png = await renderPng(target, { theme, mode, scale, aspect, padding, font });
         writeFileSync(out, png);
         size = pngSize(png);
+        pxScale = scale;
       } else {
         const svg = await renderSvg(target, { theme, mode, aspect, padding, font, static: args.includes("--static") });
         writeFileSync(out, svg);
         size = svgSize(svg);
       }
-      const adv = size ? canvasAdvice(size.width, size.height) : null;
+      const adv = size ? canvasAdvice(size.width, size.height, flag(args, "--variant") ? pxScale : false) : null;
       console.log(`wrote ${out}${adv ? `  —  ${adv.text}` : ""}`);
       if (adv?.hint && !aspect) console.log(`note: ${adv.hint}`);
       break;

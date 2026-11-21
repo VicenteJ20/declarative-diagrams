@@ -30,7 +30,7 @@ The output style is Distill.pub-like (pale panels, one accent, serif annotations
 | **Provider/level**: Azure · AWS · generic; which levels (tenant, subscription/account, RG, VNet/VPC, subnet, resources) | only the levels the message mentions or needs |
 | **Output**: spec file · PNG · interactive SVG · MDX snippet | spec file + PNG preview + MDX snippet |
 | **Where to save** | the project's own convention if its `AGENTS.md` has a *Diagrams* section (see 0b); otherwise `src/diagrams/<kebab-name>.diagram.yaml`, exports next to it or in `public/diagrams/` if that folder exists |
-| **Look**: theme, mode, font, aspect ratio, narrow variant | project default theme, `auto` mode, `mixed` font, natural aspect, no variant |
+| **Look**: theme, mode, font, aspect ratio, phone version | project default theme, `auto` mode, `mixed` font, natural aspect; **phone version (`variants.narrow`) for any diagram destined to a web page** (skip for PNG-only/slides) |
 | **Icons** | official `az-`/`aws-` when the pack is installed, else `lu-` |
 | **Audience/detail** | whoever reads the docs; ≤ 15 nodes |
 
@@ -52,6 +52,13 @@ nothing, use the defaults here and say so.
   no preference, propose 1–2 concrete spots (quote the heading/paragraph) and let them pick. Do the same for the other language's file.
 - Edit **only after they confirm**; change nothing else in that file; keep existing prose, images and legacy diagrams (webp, Mermaid) unless asked to replace them;
   add the `import` once at the top with the others, and reuse it.
+- **Embedding component owns the UI.** A project component (e.g. the portfolio's `Diagram.astro`) may replace the SVG's own stepper with real buttons, autoplay and a
+  full-screen viewer, and may strip `tabindex`/`role` from the SVG nodes (Astro's dev audit flags them). Do not add those back, do not post-process the exported SVG;
+  just give every `step` a short `title` and a one-sentence `text` (they become the buttons and the caption), and keep the same step order in every language.
+- **Phone version.** Web diagrams get two exports per language: wide `<name>.<lang>.svg` and vertical `<name>.<lang>.narrow.svg`. Design the narrow one for
+  **≤ 520 px canvas width** (`variants.narrow`: `nodes.<id>.stackWith: null` to un-stack, shorter `label`s, `hide` for secondary nodes), render it with `variant=narrow`,
+  LOOK at the PNG, and iterate until the report no longer warns (`phone view`). Same node ids and step order as the wide one; both languages. The embedding
+  component picks it under 640 px by itself — do not add props for it.
 - Afterwards run the project's check from its `AGENTS.md` (typically `npm run build`), fix errors, and tell the user which URL/page to open and what to
   try (hover, click-to-pin, steps, dark mode, a narrow window).
 
@@ -158,7 +165,7 @@ and check the numbers: `dgm_render_diagram` prints `Canvas W×H px (A:1)` and a 
 | "con los colores de mi marca / de esta imagen" | `dgm_create_theme` → preview → `save=true`; then `theme=<name>` |
 | "con letra serif / sans" | `font=serif|sans` |
 | "16:9", "cuadrado", "para redes" | `aspect=16/9` (letterboxed) |
-| "que se vea bien en el móvil" | add `variants: { narrow: {} }` and export/mention `variant=narrow` |
+| "que se vea bien en el móvil" | `variants.narrow` (un-stack / shorten / hide so the phone canvas is ≤ 520 px wide), render `variant=narrow`, export `<name>.<lang>.narrow.svg` |
 | "vertical" / "horizontal" | `direction: DOWN|RIGHT` |
 | "agrégale pasos / animación" | `steps` and `flow: true` on the main path |
 
