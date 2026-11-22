@@ -7,8 +7,8 @@ description: Retrieval-augmented chatbot on AWS - web frontend, authenticated AP
 direction: RIGHT
 notesPosition: below
 nodes:
-  - { id: sales, label: Sales representative, icon: lu-user }
-  - { id: corp, label: Corporate storage, icon: lu-files }
+  - { id: sales, label: Sales representative, icon: lu-user, placement: left }
+  - { id: corp, label: Corporate storage, icon: lu-files, placement: left }
   - id: aws
     label: AWS Cloud
     kind: cloud

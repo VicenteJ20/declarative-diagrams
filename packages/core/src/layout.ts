@@ -26,6 +26,8 @@ export interface LEdge {
   label?: { text: string; x: number; y: number; w: number; h: number };
 }
 export interface Layout {
+  /** Icon size of stacked nodes (vendor looks use bigger icons): lets checkers tell icon + label from empty box margin. */
+  iconSize?: number;
   width: number;
   height: number;
   nodes: LNode[]; // parents before children
@@ -157,6 +159,55 @@ async function layoutCore(spec: DiagramSpec, mins: Map<number, number> = new Map
   return layoutOnce(spec, widest, first.nodes.length ? new Map(first.nodes.map((n) => [n.id, spec.direction === "RIGHT" ? n.y + n.h / 2 : n.x + n.w / 2])) : undefined);
 }
 
+/** What a node really paints: for icon + label nodes the icon square and the text under it (the rest of the box is empty margin). */
+export function inkOf(n: LNode, ico: number): { x: number; y: number; w: number; h: number }[] {
+  if (n.container || nodeIcon(n.spec)?.variant !== "stacked") return [{ x: n.x, y: n.y, w: n.w, h: n.h }];
+  const tw = Math.max(textW(n.spec.label, 12.5, true), n.spec.sublabel ? textW(n.spec.sublabel, 10.5) : 0);
+  return [
+    { x: n.x + n.w / 2 - ico / 2, y: n.y + STACK_PAD, w: ico, h: ico },
+    { x: n.x + n.w / 2 - tw / 2, y: n.y + STACK_PAD + ico, w: tw, h: Math.max(0, n.h - STACK_PAD - ico) },
+  ];
+}
+
+/**
+ * Vendor look: edge labels are placed after routing (ELK would give every labelled edge its own column). The label goes above
+ * a long horizontal run (or beside a vertical one), sliding along it until it clears every icon.
+ */
+function placeLabel(pts: Pt[], text: string, nodes: LNode[], lines: Pt[][], placed: { x: number; y: number; w: number; h: number }[], ico: number, blocked: { x: number; y: number; w: number; h: number }[] = []): LEdge["label"] {
+  if (pts.length < 2) return undefined;
+  const w = Math.ceil(textW(text, 10.5)) + 12;
+  const h = 16;
+  const leaves = [...nodes.filter((n) => !n.container).flatMap((n) => inkOf(n, ico)), ...blocked];
+  const rectHits = (x: number, y: number, r: { x: number; y: number; w: number; h: number }) => x < r.x + r.w && x + w > r.x && y < r.y + r.h && y + h > r.y;
+  const lineHits = (x: number, y: number) =>
+    lines.some((ln) =>
+      ln.slice(1).some((p, k) => {
+        const a = ln[k];
+        return Math.max(a.x, p.x) > x + 1 && Math.min(a.x, p.x) < x + w - 1 && Math.max(a.y, p.y) > y + 1 && Math.min(a.y, p.y) < y + h - 1;
+      }),
+    );
+  const clash = (x: number, y: number) => leaves.some((n) => rectHits(x, y, n)) || placed.some((r) => rectHits(x, y, r)) || lineHits(x, y);
+  const segs = pts
+    .slice(1)
+    .map((p, k) => ({ a: pts[k], b: p, len: Math.abs(p.x - pts[k].x) + Math.abs(p.y - pts[k].y) }))
+    .sort((s, t) => t.len - s.len);
+  for (const s of segs) {
+    const horiz = Math.abs(s.a.y - s.b.y) < 1;
+    if (!horiz && s.len < h + 6) continue;
+    for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) {
+      const mx = s.a.x + (s.b.x - s.a.x) * t;
+      const my = s.a.y + (s.b.y - s.a.y) * t;
+      const spots = horiz ? [[mx - w / 2, my - h - 3], [mx - w / 2, my + 3]] : [[mx + 6, my - h / 2], [mx - w - 6, my - h / 2]];
+      for (const [x, y] of spots) if (!clash(x, y)) return { text, x, y, w, h };
+    }
+  }
+  const s = segs[0];
+  const horiz = Math.abs(s.a.y - s.b.y) < 1;
+  const mx = (s.a.x + s.b.x) / 2;
+  const my = (s.a.y + s.b.y) / 2;
+  return horiz ? { text, x: mx - w / 2, y: my - h - 3, w, h } : { text, x: mx + 6, y: my - h / 2, w, h };
+}
+
 /** `hint`: cross-axis centre of every node from a previous pass (vendor look: orders the connector ports). */
 async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: Map<string, number>): Promise<Layout> {
   const ico = stackIconSize(spec.look);
@@ -226,7 +277,7 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
         width: minW,
         height: 80,
         layoutOptions: {
-          "elk.padding": `[top=${HEADER_PAD},left=16,bottom=16,right=16]`,
+          "elk.padding": official ? "[top=38,left=12,bottom=12,right=12]" : `[top=${HEADER_PAD},left=16,bottom=16,right=16]`,
           "elk.nodeSize.constraints": "MINIMUM_SIZE",
           // ELK reads this rotated when the flow is DOWN
           "elk.nodeSize.minimum": spec.direction === "DOWN" ? `(80, ${minW})` : `(${minW}, 80)`,
@@ -262,7 +313,16 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
 
   const hasStacked = (ns: NodeSpec[]): boolean => ns.some((n) => (n.children?.length ? hasStacked(n.children) : nodeIcon(n)?.variant === "stacked"));
   const stacked = hasStacked(spec.nodes); // icon + label nodes need longer arrows and more air between them
-  const elkChildren = groupSiblings(spec.nodes).map((n) => toElk(n, 0));
+  // rails: `placement: left | right` pins a top-level node to the first / last column (ELK layer constraint)
+  const railOf = (it: NodeSpec | Stack) => {
+    const p = (isStack(it) ? it.members[0] : it).placement;
+    return p === "left" ? "FIRST" : p === "right" ? "LAST" : undefined;
+  };
+  const elkChildren = groupSiblings(spec.nodes).map((it) => {
+    const c: any = toElk(it, 0);
+    const r = railOf(it);
+    return r ? { ...c, layoutOptions: { ...(c.layoutOptions ?? {}), "elk.layered.layering.layerConstraint": r } } : c;
+  });
   // Edge endpoint for ELK: the member's port inside a stack (leaving side for sources, entering side for targets), else the node.
   // port index of every (edge, role): connectors of one side ordered by where their other end is
   const portIdx = new Map<string, number>();
@@ -288,6 +348,10 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
   };
   const internal = (e: { from: string; to: string }) => owner.has(e.from) && owner.get(e.from) === owner.get(e.to);
 
+  // vendor look: labels are placed after routing, so the gap between columns must be wide enough for the longest one (capped)
+  const longestLabel = Math.max(0, ...spec.edges.map((e) => (e.label ? Math.ceil(textW(e.label, 10.5)) + 12 : 0)));
+  const vendorGap = Math.min(100, Math.max(44, longestLabel - 8));
+
   const root = {
     id: "root",
     layoutOptions: {
@@ -295,7 +359,7 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
       "elk.direction": spec.direction,
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.edgeRouting": "ORTHOGONAL",
-      "elk.layered.spacing.nodeNodeBetweenLayers": spec.direction === "DOWN" ? "46" : stacked ? "60" : "56",
+      "elk.layered.spacing.nodeNodeBetweenLayers": spec.direction === "DOWN" ? "46" : official ? String(vendorGap) : stacked ? "60" : "56",
       "elk.spacing.nodeNode": stacked ? "40" : "28",
       "elk.spacing.edgeNode": "22",
       "elk.spacing.edgeEdge": "14",
@@ -303,6 +367,8 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
       ...(spec.zoneWidth === "equal" ? { "elk.layered.nodePlacement.strategy": "SIMPLE", "elk.alignment": "LEFT" } : {}),
       "elk.padding": "[top=12,left=12,bottom=12,right=12]",
+      // vendor look: squeeze the columns left after layering
+      ...(official ? { "elk.layered.compaction.postCompaction.strategy": "LEFT_RIGHT_CONNECTION_LOCKING" } : {}),
       "org.eclipse.elk.json.edgeCoords": "ROOT",
     },
     children: elkChildren,
@@ -313,7 +379,7 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
         id: ids[i],
         sources: [endpoint(e.from, "src", i)],
         targets: [endpoint(e.to, "tgt", i)],
-        labels: e.label ? [{ text: e.label, width: Math.ceil(textW(e.label, 10.5)) + 12, height: 16 }] : undefined,
+        labels: e.label && !official ? [{ text: e.label, width: Math.ceil(textW(e.label, 10.5)) + 12, height: 16 }] : undefined,
       })),
   };
 
@@ -376,7 +442,25 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
   });
 
   if (spec.direction === "DOWN" && spec.zoneWidth === "equal") return tidyBands(spec, ids, nodes, mins);
-  return { width: Math.ceil(out.width), height: Math.ceil(out.height), nodes, edges };
+  if (official) {
+    // vendor look: labels are placed now that every connector is routed (longest first, never over an icon, a line or another label)
+    const lines = edges.map((e) => e.points);
+    // numbered note markers sit on the right edge of their target: labels keep clear of them too
+    const noteMarks = spec.notes.flatMap((nt) => {
+      const t = nodeById.get(nt.target);
+      return t ? [{ x: t.x + t.w - 10, y: t.y + Math.min(t.h / 2, 24) - 10, w: 20, h: 20 }] : [];
+    });
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    edges
+      .map((e, i) => ({ e, i }))
+      .filter(({ i }) => spec.edges[i].label)
+      .sort((a, b) => Math.max(...b.e.points.slice(1).map((p, k) => Math.abs(p.x - b.e.points[k].x) + Math.abs(p.y - b.e.points[k].y))) - Math.max(...a.e.points.slice(1).map((p, k) => Math.abs(p.x - a.e.points[k].x) + Math.abs(p.y - a.e.points[k].y))))
+      .forEach(({ e, i }) => {
+        e.label = placeLabel(e.points, spec.edges[i].label!, nodes, lines, placed, ico, noteMarks);
+        if (e.label) placed.push(e.label);
+      });
+  }
+  return { iconSize: ico, width: Math.ceil(out.width), height: Math.ceil(out.height), nodes, edges };
 }
 
 /**
@@ -588,7 +672,21 @@ const subtreeIds = (n: NodeSpec): string[] => [n.id, ...(n.children ?? []).flatM
  * the main diagram, each centred under the node it connects to. Edges between the two parts are straight/elbow arrows between
  * the bottom of the main node and the top of the boxed node.
  */
+/** `official` look: every leaf with an icon is a flat stacked icon unless the author chose a variant. */
+export function withLook(spec: DiagramSpec, look?: "default" | "official" | "azure"): DiagramSpec {
+  const l = look ?? spec.look;
+  if (l !== "official" && l !== "azure") return look ? { ...spec, look } : spec;
+  const map = (list: NodeSpec[]): NodeSpec[] =>
+    list.map((nd) => ({
+      ...nd,
+      ...(nd.icon && !nd.variant && !nd.children?.length ? { variant: "stacked" as const } : {}),
+      ...(nd.children ? { children: map(nd.children) } : {}),
+    }));
+  return { ...spec, look: l, nodes: map(spec.nodes) };
+}
+
 export async function layoutSpec(spec: DiagramSpec): Promise<Layout> {
+  spec = withLook(spec);
   const flowRight = spec.direction === "RIGHT";
   const below = spec.nodes.filter((n) => n.placement === "below" && !n.stackWith && !spec.nodes.some((m) => m.stackWith === n.id));
   if (!below.length) return layoutCore(spec);

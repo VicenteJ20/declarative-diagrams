@@ -130,7 +130,8 @@ Reference: `examples/aws-genai-chatbot.diagram.yaml`. Follow this recipe; do not
    - the render report must not contain any `connection check:` / `CONNECTION CHECK:` line. Each line names a connector that runs through a
      node or two arrowheads on one point. Fix by reordering nodes, `stackWith`, splitting a fan-out, or removing a redundant edge;
    - every arrow must end on an icon and have its own arrowhead; no connector may cross an icon; look at the PNG for lines that wander.
-8. **Repeatability.** Same inputs → same picture: do not hand-tune coordinates (there are none). Keep ids kebab-case, nodes in reading order,
+8. **Use the space.** Actors and on-premises sources → `placement: left`; consumers / identity → `placement: right`; never leave a node without an edge. Edge labels ≤ 14 characters or none; a `label overlaps` line in the connection check means shorten it. Do not nest more than 4 container levels.
+9. **Repeatability.** Same inputs → same picture: do not hand-tune coordinates (there are none). Keep ids kebab-case, nodes in reading order,
    and commit the `*.diagram.yaml` next to its exported `.png`/`.svg`.
 
 ## Tips

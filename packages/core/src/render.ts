@@ -1,6 +1,6 @@
 import { buildSequence } from "./sequence.js";
-import { DiagramSpec, NodeSpec, edgeIds } from "./spec.js";
-import { Layout, LEdge, Pt, layoutSpec, textW, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
+import { DiagramSpec, edgeIds } from "./spec.js";
+import { Layout, LEdge, Pt, layoutSpec, withLook, textW, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
 import { kindOf } from "./kinds.js";
 import { nodeIcon, IconEmitter, diagramNs, stackIconSize, STACK_GLYPH, STACK_PAD, CARD_ICON, HEAD_ICON } from "./icons/index.js";
 import { css } from "./theme.js";
@@ -80,19 +80,6 @@ function glyphSvg(kind?: string): string {
   return inner;
 }
 
-/** `official` look: every leaf with an icon is a flat stacked icon unless the author chose a variant. */
-function withLook(spec: DiagramSpec, look?: Look): DiagramSpec {
-  const l = look ?? spec.look;
-  if (l !== "official" && l !== "azure") return look ? { ...spec, look } : spec;
-  const map = (list: NodeSpec[]): NodeSpec[] =>
-    list.map((nd) => ({
-      ...nd,
-      ...(nd.icon && !nd.variant && !nd.children?.length ? { variant: "stacked" as const } : {}),
-      ...(nd.children ? { children: map(nd.children) } : {}),
-    }));
-  return { ...spec, look: l, nodes: map(spec.nodes) };
-}
-
 export async function renderSvg(spec: DiagramSpec, opts: RenderOptions = {}): Promise<string> {
   const eff = withLook(spec, opts.look);
   const layout = await layoutSpec(eff);
@@ -155,7 +142,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const official = look !== "default"; // any vendor look
   const azure = look === "azure";
   const ICO = stackIconSize(look);
-  if (opts.report) opts.report.connections = checkConnections(layout);
+  if (opts.report) opts.report.connections = checkConnections(layout, { labels: official });
   const ids = edgeIds(spec);
   const icons = new IconEmitter(diagramNs(JSON.stringify(layout.nodes.map((q) => [q.id, q.spec.icon, q.spec.label]))));
   const nodeById = new Map(layout.nodes.map((nd) => [nd.id, nd]));

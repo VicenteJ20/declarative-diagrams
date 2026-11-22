@@ -121,3 +121,67 @@ describe("connection check", () => {
     expect(issues.join("\n")).toMatch(/end on the same point/);
   });
 });
+
+describe("compact layout (vendor looks)", () => {
+  const icon = (id: string, extra: object = {}) => ({ id, label: id.toUpperCase(), icon: "lu-server", ...extra });
+  const chain = (labels: boolean) =>
+    validateSpec({
+      look: "azure",
+      nodes: [icon("a"), icon("b"), icon("c"), icon("d")],
+      edges: [["a", "b"], ["b", "c"], ["c", "d"]].map(([from, to]) => ({ from, to, ...(labels ? { label: "connector label" } : {}) })),
+    }).spec!;
+
+  it("edge labels never overlap an icon or each other, and cost at most one capped gap per column", async () => {
+    const without = await layoutSpec(chain(false));
+    const withLabels = await layoutSpec(chain(true));
+    expect(withLabels.width).toBeLessThanOrEqual(without.width + 3 * 60); // 4 nodes = 3 gaps, each widened by at most 100 - 44
+    expect(checkConnections(withLabels, { labels: true })).toEqual([]);
+  });
+
+  it("placement left / right pins nodes to the first / last column", async () => {
+    const spec = validateSpec({
+      look: "official",
+      nodes: [
+        icon("user", { placement: "left" }),
+        icon("docs", { placement: "left" }),
+        { id: "cloud", label: "Cloud", kind: "cloud", children: [icon("front"), icon("app"), icon("db")] },
+        icon("idp", { placement: "right" }),
+      ],
+      edges: [{ from: "user", to: "front" }, { from: "docs", to: "db" }, { from: "front", to: "app" }, { from: "app", to: "db" }, { from: "app", to: "idp", style: "dashed" }],
+    }).spec!;
+    const l = await layoutSpec(spec);
+    const x = (id: string) => l.nodes.find((n) => n.id === id)!;
+    const cloud = x("cloud");
+    expect(x("user").x + x("user").w).toBeLessThanOrEqual(cloud.x + 1);
+    expect(x("docs").x + x("docs").w).toBeLessThanOrEqual(cloud.x + 1);
+    expect(x("idp").x).toBeGreaterThanOrEqual(cloud.x + cloud.w - 1);
+    expect(checkConnections(l, { labels: true })).toEqual([]);
+  });
+
+  it("space budget: icons plus the left rail leave little empty canvas on a typical landing zone", async () => {
+    const spec = validateSpec({
+      look: "azure",
+      nodes: [
+        icon("users", { placement: "left" }),
+        icon("front"),
+        { id: "tenant", label: "tenant", kind: "azure.tenant", children: [
+          { id: "sub", label: "sub", kind: "azure.subscription", children: [
+            { id: "vnet", label: "vnet", kind: "azure.vnet", children: [{ id: "sn", label: "snet", kind: "azure.subnet", children: [icon("apim"), icon("app", { stackWith: undefined })] }] },
+            icon("db"),
+          ] },
+        ] },
+      ],
+      edges: [
+        { from: "users", to: "front", label: "HTTPS" }, { from: "front", to: "apim", label: "Private Link" },
+        { from: "apim", to: "app" }, { from: "app", to: "db", label: "SQL" },
+      ],
+    }).spec!;
+    const l = await layoutSpec(spec);
+    const tenant = l.nodes.find((n) => n.id === "tenant")!;
+    const u = l.nodes.find((n) => n.id === "users")!;
+    const fr = l.nodes.find((n) => n.id === "front")!;
+    // only the two actor columns (plus one layer gap each) stand before the first container: no empty band
+    expect(tenant.x).toBeLessThanOrEqual(u.x + u.w + fr.w + 2 * 100 + 40);
+    expect(checkConnections(l, { labels: true })).toEqual([]);
+  });
+});

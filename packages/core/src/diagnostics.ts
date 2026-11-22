@@ -1,3 +1,4 @@
+import { inkOf } from "./layout.js";
 import type { Layout, LNode, Pt } from "./layout.js";
 
 /** Size/proportion report for an exported diagram, with advice when it is badly proportioned for a page. */
@@ -73,10 +74,10 @@ function segmentHitsRect(a: Pt, b: Pt, r: { x: number; y: number; w: number; h: 
  * Connection check on a computed layout. Returns one line per problem (empty = clean):
  *  - a connector runs *through* a node that is not one of its ends (or a container holding one of its ends),
  *  - two connectors end on exactly the same point (their arrowheads would overlap).
- * The renderer runs it on every render (`RenderOptions.report`); the CLI and the MCP server print the result so an author
+ * `labels`: also report edge labels that sit on a node or on another label (vendor looks place labels themselves). The renderer runs it on every render (`RenderOptions.report`); the CLI and the MCP server print the result so an author
  * (human or AI) fixes the spec instead of shipping a misleading arrow.
  */
-export function checkConnections(layout: Layout): string[] {
+export function checkConnections(layout: Layout, opts: { labels?: boolean } = {}): string[] {
   const issues: string[] = [];
   const byId = new Map<string, LNode>(layout.nodes.map((n) => [n.id, n]));
   const within = (id: string, anc: string): boolean => {
@@ -103,5 +104,17 @@ export function checkConnections(layout: Layout): string[] {
   }
   for (const ids of ends.values())
     if (ids.length > 1) issues.push(`connectors ${ids.join(", ")} end on the same point — their arrowheads overlap.`);
+  if (opts.labels) {
+    const labelled = layout.edges.filter((e) => e.label);
+    const hit = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) => a.x < b.x + b.w - 1 && a.x + a.w > b.x + 1 && a.y < b.y + b.h - 1 && a.y + a.h > b.y + 1;
+    for (const e of labelled) {
+      const lb = e.label!;
+      const n = leaves.find((q) => inkOf(q, layout.iconSize ?? 32).some((r) => hit(lb, r)));
+      if (n) issues.push(`label "${lb.text}" of ${e.id} overlaps node "${n.id}" — shorten it or drop it.`);
+    }
+    for (let i = 0; i < labelled.length; i++)
+      for (let j = i + 1; j < labelled.length; j++)
+        if (hit(labelled[i].label!, labelled[j].label!)) issues.push(`labels "${labelled[i].label!.text}" and "${labelled[j].label!.text}" overlap.`);
+  }
   return issues;
 }

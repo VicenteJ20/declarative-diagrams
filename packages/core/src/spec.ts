@@ -26,7 +26,7 @@ export interface NodeSpec {
    * instead of as one more column to the right (keeps the diagram compact — ideal for an optional cloud/external box).
    * Ignored when the flow is DOWN (it already ends below).
    */
-  placement?: "below";
+  placement?: "below" | "left" | "right";
   /** Containers, `look: official`: border colour (#hex) — e.g. VPC green, ECS orange, Step Functions pink. */
   color?: string;
   /** Containers, `look: official`: `solid` (default), `dashed` for logical groups (clusters, auto scaling groups) or `tinted` (solid + light fill, e.g. subnets). */
@@ -50,7 +50,7 @@ const NodeSchema: z.ZodType<NodeSpec> = z.lazy(() =>
       stackWith: z.string().optional(),
       badge: z.union([z.string(), z.number()]).optional(),
       variant: z.enum(["card", "stacked"]).optional(),
-      placement: z.literal("below").optional(),
+      placement: z.enum(["below", "left", "right"]).optional(),
       color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "must be a #hex colour").optional(),
       border: z.enum(["solid", "dashed", "dotted", "tinted", "filled"]).optional(),
       sublabel: z.string().optional(),
@@ -397,7 +397,7 @@ export function specJsonSchema(): unknown {
       tone: { enum: [...TONES] },
       icon: { type: "string", description: "az-<name> | aws-<name> | lu-<name> | <custom-prefix>-<name>. Run `dgm icons search <text>` to discover names." },
       variant: { enum: ["card", "stacked"] },
-      placement: { const: "below", description: "top-level node drawn in a row under the diagram (flow RIGHT), centred under the node it connects to" },
+      placement: { enum: ["below", "left", "right"], description: "top-level node. below = drawn in a row under the diagram (flow RIGHT), centred under the node it connects to. left / right = pinned to the first / last column of the flow (rails: actors on the left, consumers on the right) instead of drifting into the middle" },
       stackWith: { type: "string", description: "id of a sibling leaf: same step, stacked across the flow (below it when direction RIGHT, beside it when DOWN)" },
       badge: { type: ["string", "number"], description: "sequence marker shown on the node, e.g. 1, 2, 3" },
       color: { type: "string", description: "containers, look: official — border colour as #hex" },

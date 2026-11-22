@@ -147,7 +147,8 @@ Azure diagrams use the Microsoft architecture-diagram look (see `examples/azure-
    endpoint / Private Link as its own node inside the subnet. Users and clients: Lucide (`lu-user`, `lu-laptop`). No Microsoft logo in the diagram.
 4. **Connectors.** Black, solid for the request path, dashed for async / control / telemetry; short labels (protocol, "Private Link", "peering").
    Cross-VNet traffic is one edge labelled `peering`. Never two edges between the same pair.
-5. **Check the connections** exactly as in the AWS guide: the render report must have no `connection check` lines; fix by reordering, `stackWith`,
+5. **Use the space.** Users and corporate sources → `placement: left`; Entra ID / shared consumers → `placement: right` (outside the tenant box); no orphan nodes; labels ≤ 14 characters or none.
+6. **Check the connections** exactly as in the AWS guide: the render report must have no `connection check` lines; fix by reordering, `stackWith`,
    or splitting the fan-out. Every arrow ends on an icon.
 
 ## Tips

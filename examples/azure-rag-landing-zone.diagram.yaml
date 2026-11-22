@@ -6,14 +6,15 @@ look: azure
 direction: RIGHT
 notesPosition: below
 nodes:
-  - { id: users, label: Employees, icon: lu-users, variant: stacked }
-  - { id: docs, label: Corporate documents, icon: lu-files, variant: stacked }
+  # rails: actors on the left, the identity provider on the right, so nothing drifts into the middle of the picture
+  - { id: users, label: Employees, icon: lu-users, placement: left }
+  - { id: docs, label: Corporate documents, icon: lu-files, placement: left }
   - { id: afd, label: Front Door, sublabel: WAF, icon: az-front-door-and-cdn-profiles }
+  - { id: entra, label: Microsoft Entra ID, sublabel: Tokens and RBAC, icon: lu-shield-check, placement: right }
   - id: tenant
     label: contoso.onmicrosoft.com
     kind: azure.tenant
     children:
-      - { id: entra, label: Microsoft Entra ID, sublabel: Tokens and RBAC, icon: lu-shield-check, variant: stacked }
       - id: hub
         label: connectivity
         kind: azure.subscription
@@ -25,7 +26,6 @@ nodes:
             icon: az-virtual-networks
             children:
               - { id: fw, label: Azure Firewall, sublabel: Egress policy, icon: az-firewalls }
-              - { id: bastion, label: Bastion, icon: az-bastions }
       - id: prod
         label: ai-chat-prod
         kind: azure.subscription
@@ -86,7 +86,7 @@ edges:
   - { from: app, to: fw, label: egress, style: dashed }
   # ingestion path
   - { from: docs, to: blob, label: upload }
-  - { from: blob, to: grid, label: blob created, style: dashed }
+  - { from: blob, to: grid, label: new blob, style: dashed }
   - { from: grid, to: func, style: dashed }
   - { from: func, to: docint, label: extract }
   - { from: func, to: openai, label: embeddings }
@@ -100,7 +100,7 @@ notes:
   - { target: pe, text: "Private data plane. The backend reaches Azure OpenAI, AI Search and Cosmos DB through private endpoints; public network access is disabled on all of them." }
   - { target: search, text: "Grounding. The backend retrieves the most relevant chunks from the vector index and sends them with the question to Azure OpenAI; the answer and its citations are stored as chat history." }
   - { target: func, text: "Asynchronous ingestion. A new document triggers Event Grid, then a Function extracts the text, chunks it, generates embeddings and indexes them. The chat path is never blocked." }
-  - { target: kv, text: "Operations. Secrets live in Key Vault and are read with managed identities; telemetry goes to Log Analytics and alerts to Monitor. Administration goes through Bastion." }
+  - { target: kv, text: "Operations. Secrets live in Key Vault and are read with managed identities; telemetry goes to Log Analytics and alerts to Monitor." }
 legend:
   - { style: solid, label: Request / data path }
   - { style: dashed, label: "Control, async or telemetry" }
@@ -108,4 +108,4 @@ steps:
   - { title: 1 · A question arrives, show: [users, afd, apim, entra, app] }
   - { title: 2 · Grounded answer, show: [app, pe, openai, search, cosmos] }
   - { title: 3 · Document ingestion, show: [docs, blob, grid, func, docint, openai, search] }
-  - { title: 4 · Operations, show: [app, kv, law, mon, fw, bastion] }
+  - { title: 4 · Operations, show: [app, kv, law, mon, fw] }
