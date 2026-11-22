@@ -1,0 +1,225 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:where(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--accent-soft-strong);
+}
+
+img,
+svg {
+  vertical-align: middle;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: visible only when focused. */
+.skip {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 50;
+  transform: translateY(-160%);
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 140ms ease;
+}
+
+.skip:focus {
+  transform: translateY(0);
+}
+
+/* Brand lockup, shared by the playground and the static pages. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text) !important;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.024em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand .mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgb(79 70 229 / 35%);
+}
+
+.brand .word {
+  display: inline-flex;
+  gap: 0.3ch;
+}
+
+.brand .word span {
+  color: var(--text-muted);
+  font-weight: 450;
+}
+
+.brand .word b {
+  font-weight: 600;
+}
+
+.brand:hover .mark {
+  filter: brightness(1.08);
+}
+
+/* Three-state theme switch. */
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.themeToggle button {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-subtle);
+}
+
+.themeToggle button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.themeToggle button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Static pages (guide, future docs). */
+.siteHeader {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+.siteHeader nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: auto;
+  font-size: 13.5px;
+}
+
+.siteHeader nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.siteHeader nav a:hover {
+  color: var(--text);
+}
+
+.siteFooter {
+  max-width: 1120px;
+  margin: 40px auto 0;
+  padding: 22px 24px 32px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.siteFooter a {
+  color: var(--text-muted);
+}
+
+main#main {
+  min-height: 40vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

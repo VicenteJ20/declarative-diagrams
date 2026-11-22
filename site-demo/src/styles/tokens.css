@@ -1,0 +1,96 @@
+/* Design tokens for the demo site. Keep both themes AA-safe: `contrast.test.ts` parses this file. */
+:root {
+  color-scheme: light;
+
+  --bg: #fafafd;
+  --surface: #ffffff;
+  --surface-2: #f2f2f9;
+  --border: #e4e4ef;
+  --border-strong: #cfcfe0;
+
+  --text: #17172b;
+  --text-muted: #565670;
+  --text-subtle: #66667f;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --on-accent: #ffffff;
+  --accent-soft: #eeeefd;
+  --accent-soft-strong: #e0e0fb;
+
+  --success: #2f6b3a;
+  --success-bg: #e8f2e6;
+  --warning: #8a5a00;
+  --warning-bg: #fbf1d9;
+  --danger: #a3321f;
+  --danger-bg: #fbeae6;
+
+  --focus: #6366f1;
+  --editor-active: #f3f3fb;
+  --editor-selection: #dcdcfa;
+
+  --cm-key: #4338ca;
+  --cm-string: #7a4a12;
+  --cm-number: #7c3f2e;
+  --cm-bool: #0e7490;
+  --cm-comment: #66667f;
+  --cm-punct: #6b6b82;
+  --cm-sep: #43435a;
+  --cm-meta: #8a5a00;
+  --cm-anchor: #2f6b3a;
+
+  --shadow: 0 1px 2px rgb(23 23 43 / 6%), 0 10px 30px rgb(23 23 43 / 5%);
+  --shadow-pop: 0 12px 34px rgb(23 23 43 / 14%);
+
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  --sans: -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #101018;
+  --surface: #171722;
+  --surface-2: #1e1e2c;
+  --border: #2b2b3d;
+  --border-strong: #3a3a50;
+
+  --text: #ecebf5;
+  --text-muted: #a9a8bd;
+  --text-subtle: #9190a8;
+
+  --accent: #a5a8ff;
+  --accent-hover: #bcbeff;
+  --on-accent: #14142b;
+  --accent-soft: #23233f;
+  --accent-soft-strong: #30305a;
+
+  --success: #9fd27f;
+  --success-bg: #24301f;
+  --warning: #f0c45a;
+  --warning-bg: #36301a;
+  --danger: #ff9c88;
+  --danger-bg: #3a2420;
+
+  --focus: #a5a8ff;
+  --editor-active: #1c1c2a;
+  --editor-selection: #30305a;
+
+  --cm-key: #b4b7ff;
+  --cm-string: #e6b980;
+  --cm-number: #e8a08d;
+  --cm-bool: #7dd3e0;
+  --cm-comment: #9a9ab0;
+  --cm-punct: #a9a9bd;
+  --cm-sep: #d0d0e0;
+  --cm-meta: #f0c45a;
+  --cm-anchor: #9fd27f;
+
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 30px rgb(0 0 0 / 18%);
+  --shadow-pop: 0 14px 38px rgb(0 0 0 / 45%);
+}

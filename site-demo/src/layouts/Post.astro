@@ -1,15 +1,83 @@
 ---
+import Base from "./Base.astro";
 const { frontmatter } = Astro.props;
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" /><meta name="viewport" content="width=device-width" />
-    <title>{frontmatter.title}</title>
-    <style is:global>
-      :root{color-scheme:light dark}
-      body{font-family:Georgia,serif;max-width:720px;margin:3rem auto;padding:0 1rem;line-height:1.65}
-      @media (prefers-color-scheme:dark){body{background:#16151c;color:#e8e6f0}}
-    </style>
-  </head>
-  <body><h1>{frontmatter.title}</h1><slot /></body>
-</html>
+
+<Base title={frontmatter.title} description={frontmatter.description ?? "Embed interactive declarative diagrams in your site."}>
+  <article class="prose">
+    <p class="eyebrow">Guide</p>
+    <h1>{frontmatter.title}</h1>
+    <slot />
+  </article>
+</Base>
+
+<style is:global>
+  .prose {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 14px 24px 40px;
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.7;
+  }
+
+  .prose > p,
+  .prose > ul,
+  .prose > ol {
+    max-width: 66ch;
+  }
+
+  .prose h1 {
+    margin: 0 0 22px;
+    font-family: var(--serif);
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .prose h2 {
+    margin: 38px 0 12px;
+    font-size: 24px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .prose p {
+    margin: 0 0 16px;
+  }
+
+  .prose a {
+    color: var(--accent);
+  }
+
+  .prose code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    font-family: var(--mono);
+    font-size: 0.84em;
+  }
+
+  .eyebrow {
+    margin: 0 0 10px;
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .prose .dgm-fig {
+    margin: 24px 0 30px;
+  }
+
+  .prose figcaption {
+    color: var(--text-muted);
+  }
+
+  .prose button {
+    cursor: pointer;
+  }
+</style>
