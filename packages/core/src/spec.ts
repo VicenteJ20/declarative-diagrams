@@ -117,11 +117,11 @@ export const SpecSchema = z
     /** `default` (Distill: tinted panels, card nodes) or `official` (vendor-style: flat icons, outlined groups, square numbered badges, black connectors). Overridable at render time. */
     look: z.enum(["default", "official", "azure"]).optional(),
     /** Theme name (`olive`, `azure`…) or an inline theme definition. Overridable at render time. */
-    theme: z.union([z.string(), z.record(z.unknown())]).optional(),
+    theme: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
     /** Typeface style: `mixed` (default, Distill), `sans` or `serif`. Overridable at render time. */
     font: z.enum(["mixed", "sans", "serif"]).optional(),
     /** Token overrides on top of the theme. */
-    palette: z.record(z.unknown()).optional(),
+    palette: z.record(z.string(), z.unknown()).optional(),
     /** `equal`: containers of the same depth get the same width (tidy bands, best for a vertical/phone layout). */
     zoneWidth: z.enum(["auto", "equal"]).default("auto"),
     /** Where notes go: a margin gutter (default) or a numbered list under the diagram. */
