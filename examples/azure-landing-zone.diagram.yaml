@@ -1,7 +1,7 @@
 type: architecture
 title: Azure web app — hub-and-spoke landing zone
 description: Users reach an Application Gateway in the hub; the app tier talks to SQL and Key Vault through private endpoints. Fictional example.
-look: default   # the Distill look, with your own theme (here: olive) — AWS and Azure house styles are look: official | azure
+look: default   # the Distill look, themeable (try the olive or slate themes) — AWS and Azure house styles are look: official | azure
 direction: RIGHT
 notesPosition: below
 nodes:

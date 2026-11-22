@@ -29,14 +29,14 @@
   --editor-active: #f3f3fb;
   --editor-selection: #dcdcfa;
 
-  --cm-key: #4338ca;
-  --cm-string: #7a4a12;
-  --cm-number: #7c3f2e;
-  --cm-bool: #0e7490;
-  --cm-comment: #66667f;
-  --cm-punct: #6b6b82;
+  --cm-key: #0b7a75;
+  --cm-string: #a3472a;
+  --cm-number: #8a6100;
+  --cm-bool: #2457a6;
+  --cm-comment: #667085;
+  --cm-punct: #667085;
   --cm-sep: #43435a;
-  --cm-meta: #8a5a00;
+  --cm-meta: #8a6100;
   --cm-anchor: #2f6b3a;
 
   --shadow: 0 1px 2px rgb(23 23 43 / 6%), 0 10px 30px rgb(23 23 43 / 5%);
@@ -81,14 +81,14 @@
   --editor-active: #1c1c2a;
   --editor-selection: #30305a;
 
-  --cm-key: #b4b7ff;
-  --cm-string: #e6b980;
-  --cm-number: #e8a08d;
-  --cm-bool: #7dd3e0;
-  --cm-comment: #9a9ab0;
-  --cm-punct: #a9a9bd;
+  --cm-key: #5fd7c8;
+  --cm-string: #f2b8a2;
+  --cm-number: #f6d36b;
+  --cm-bool: #9ec5ff;
+  --cm-comment: #8a94a6;
+  --cm-punct: #98a2b3;
   --cm-sep: #d0d0e0;
-  --cm-meta: #f0c45a;
+  --cm-meta: #f6d36b;
   --cm-anchor: #9fd27f;
 
   --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 30px rgb(0 0 0 / 18%);
