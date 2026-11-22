@@ -1,15 +1,22 @@
 # declarative-diagrams
 
-**Declarative, interactive diagrams in the [Distill.pub](https://distill.pub) style.** Write a small YAML file and get an
+**Cloud architecture diagrams as code — AWS and Azure first.** Describe your architecture in a small YAML file and get an
 **interactive SVG** (hover/click highlighting, animated flow, step-by-step reveal, tooltips), a **static PNG**, or a
-`<Diagram />` for **MDX / React** sites. Built for cloud architecture (Azure / AWS tenants, subscriptions, accounts, VNets/VPCs,
-subnets, resources and their interactions), flowcharts and ER models — and fully themeable, so diagrams match *your* brand.
+`<Diagram />` for **MDX / React** sites. It draws AWS accounts and VPCs, Azure tenants, subscriptions and landing zones with the
+**official icons** in each vendor's reference style, plus flowcharts and ER models — and it is fully themeable, so diagrams match *your* brand.
+The interaction design is inspired by [Distill.pub](https://distill.pub).
 
-**[▶ Try it in the playground](https://vicentej20.github.io/declarative-diagrams/)** — edit the YAML and watch the diagram redraw, switch themes and looks, step through scenarios, export SVG/PNG. Runs entirely in your browser.
+**[▶ Try it in the playground](https://vicentej20.github.io/declarative-diagrams/)** — the AWS and Azure examples are one click away (marked ★). Edit the YAML and watch the diagram redraw, switch themes and looks, step through scenarios, export SVG/PNG. Runs entirely in your browser.
+
+![GenAI chatbot on AWS](docs/img/aws-genai-chatbot.png)
+
+![Enterprise RAG on Azure](docs/img/azure-rag-landing-zone.png)
+
+<p align="center"><em>Two larger architectures, written as plain YAML (fictional examples).</em></p>
+
+Same engine, your own look:
 
 ![Azure-style architecture](docs/img/azure-style.png)
-
-<p align="center"><em>Same engine, your own look:</em></p>
 
 ![Landing zone, olive theme](docs/img/landing-zone-olive.png)
 
@@ -97,13 +104,12 @@ import { Diagram } from "@declarative-diagrams/react";
 
 ![AWS-style architecture](docs/img/aws-style.png)
 
-## Showcase: two larger architectures
+## AWS and Azure looks
 
-AWS uses `look: official` and Azure `look: azure` (vendor-style: flat icons, outlined groups, numbered badges — `dgm render --look official|azure`; the house-style recipes are in the Skill) and are plain YAML ([`aws-genai-chatbot`](examples/aws-genai-chatbot.diagram.yaml), [`azure-rag-landing-zone`](examples/azure-rag-landing-zone.diagram.yaml)) with numbered notes, step-by-step scenarios and the official icons (imported locally, see above). Fictional examples.
-
-![GenAI chatbot on AWS](docs/img/aws-genai-chatbot.png)
-
-![Enterprise RAG on Azure](docs/img/azure-rag-landing-zone.png)
+AWS uses `look: official` and Azure `look: azure` (vendor-style: flat icons, outlined groups, numbered badges — `dgm render --look official|azure`; the house-style recipes are in the Skill). The two diagrams at the top are plain YAML
+([`aws-genai-chatbot`](examples/aws-genai-chatbot.diagram.yaml), [`azure-rag-landing-zone`](examples/azure-rag-landing-zone.diagram.yaml))
+with numbered notes, step-by-step scenarios and the official icons (imported locally, see above). In the playground they appear
+pre-rendered and read-only, because the icon packs cannot be bundled.
 
 ## Contributing
 

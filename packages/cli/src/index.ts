@@ -40,7 +40,7 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const HELP = `dgm — Distill-style interactive diagrams
+const HELP = `dgm — declarative interactive diagrams
 
 Usage:
   dgm render <spec> -o <out.svg|out.png> [--static] [--mode auto|light|dark] [--theme <name|file>] [--scale 2]

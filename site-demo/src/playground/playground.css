@@ -84,7 +84,7 @@
 .lead b {
   margin-right: 8px;
   color: var(--text);
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.015em;
