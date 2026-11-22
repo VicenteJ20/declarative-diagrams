@@ -24,7 +24,7 @@
     "@astrojs/mdx": "^4.0.0",
     "@astrojs/react": "^4.0.0",
     "@declarative-diagrams/react": "^0.1.0",
-    "astro": "^5.0.0",
+    "astro": "^7.4.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }
