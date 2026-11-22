@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # npm: one grouped PR per week; majors are proposed separately so they get reviewed on their own
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions are pinned by commit SHA; Dependabot keeps the pins (and the `# vN` comments) current
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(ci)"

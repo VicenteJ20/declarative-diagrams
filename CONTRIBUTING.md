@@ -19,6 +19,15 @@ Rebuild (`npm run build`) after changing `packages/*/src`.
 (edit this one; `.claude/skills/diagram-author` is a generated copy) · `examples/` · `docs/`.
 Agent notes for AI assistants working on the repo are in [AGENTS.md](AGENTS.md).
 
+## Sending a change
+
+1. Fork the repository and create a branch (`feat/…`, `fix/…`, `docs/…`).
+2. `npm run build && npm test` must pass locally.
+3. Open a pull request against `main`; fill in the template. Draft PRs are fine for early feedback.
+4. CI (`required`) must be green and the maintainer must approve; `main` only accepts squash merges through reviewed pull requests
+   (see [GOVERNANCE.md](GOVERNANCE.md)). Keep PRs small and focused; use a conventional title (`feat: …`, `fix: …`, `docs: …`).
+5. Security problems: do **not** open a PR or issue; follow [SECURITY.md](SECURITY.md).
+
 ## Rules
 
 - **No official icon packs in git.** Azure/AWS icons are imported locally (`icons-inbox/`, `dgm icons update`) and never committed;

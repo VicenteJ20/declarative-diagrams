@@ -105,7 +105,7 @@ AWS uses `look: official` and Azure `look: azure` (vendor-style: flat icons, out
 
 ## Contributing
 
-Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Report security problems privately
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The project is maintainer-led: every change reaches `main` through a reviewed pull request ([GOVERNANCE.md](GOVERNANCE.md)). Report security problems privately
 ([SECURITY.md](SECURITY.md)).
 
 ## License and notices

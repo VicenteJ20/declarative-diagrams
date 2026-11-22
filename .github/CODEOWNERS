@@ -1,0 +1,17 @@
+# Every change needs the maintainer's review (enforced by the main ruleset: "Require review from Code Owners").
+*                       @VicenteJ20
+
+# Supply-chain and policy files: always the maintainer, called out explicitly.
+/.github/               @VicenteJ20
+/package.json           @VicenteJ20
+/package-lock.json      @VicenteJ20
+/LICENSE                @VicenteJ20
+/NOTICE.md              @VicenteJ20
+/ICONS-DISCLAIMER.md    @VicenteJ20
+/SECURITY.md            @VicenteJ20
+/GOVERNANCE.md          @VicenteJ20
+
+# Security-sensitive code: SVG output, icon sanitising, MCP file access.
+/packages/core/src/theme.ts          @VicenteJ20
+/packages/core/src/icons/            @VicenteJ20
+/packages/mcp/src/server.ts          @VicenteJ20
