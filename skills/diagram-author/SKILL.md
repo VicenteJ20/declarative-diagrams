@@ -38,7 +38,7 @@ with `<Diagram />`.
 7. **`render_diagram` (PNG) and LOOK at it.** Check the review list in `references/style.md`. Iterate up to ~4 times, changing
    one thing at a time (direction, nesting, which edges exist, labels).
 8. **Save and export.** `write_diagram` to `src/diagrams/<name>.diagram.yaml`; export with `render_diagram save_to=…`
-   (`.svg` interactive, `.png` static). Give the user the MDX snippet (below).
+   (`.svg` interactive, `.png` static; pass `overwrite=true` when re-exporting an existing file). Give the user the MDX snippet (below).
 
 ## Spec essentials
 

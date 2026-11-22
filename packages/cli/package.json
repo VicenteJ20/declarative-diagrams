@@ -1,8 +1,41 @@
 {
   "name": "@dgm/cli",
   "version": "0.1.0",
+  "license": "MIT",
+  "author": "Vicente Jorquera",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "bugs": {
+    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
-  "bin": { "dgm": "dist/index.js" },
-  "scripts": { "build": "tsup src/index.ts --format esm --clean" },
-  "dependencies": { "@dgm/core": "*", "yaml": "^2.6.0" }
+  "bin": {
+    "dgm": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean"
+  },
+  "dependencies": {
+    "@dgm/core": "^0.1.0",
+    "yaml": "^2.6.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "diagrams",
+    "svg",
+    "yaml",
+    "architecture",
+    "mcp",
+    "azure",
+    "aws"
+  ]
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync, readdirSync, statSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync, readdirSync, statSync, mkdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -114,6 +114,35 @@ describe("MCP tools", () => {
     expect(existsSync(join(root, "src/diagrams/bad.diagram.yaml"))).toBe(false);
     // reads back by path
     expect(JSON.parse((await call("validate_diagram", { path: "src/diagrams/a.diagram.yaml" })).text).ok).toBe(true);
+  });
+
+  it("render save_to: right extension, no silent overwrite, no escape via absolute path, symlink or lookalike name", async () => {
+    expect((await call("render_diagram", { spec: GOOD, save_to: "package.json" })).text).toMatch(/must end in \.png/);
+    expect((await call("render_diagram", { spec: GOOD, format: "svg", save_to: "x.png" })).isError).toBe(true);
+    expect((await call("render_diagram", { spec: GOOD, save_to: "out/a.png" })).text).toMatch(/already exists/); // out/a.png from the test above
+    expect((await call("render_diagram", { spec: GOOD, save_to: "out/a.png", overwrite: true })).isError).toBe(false);
+    expect((await call("render_diagram", { spec: GOOD, save_to: join(tmpdir(), "dgm-abs-escape.png") })).isError).toBe(true);
+    expect((await call("render_diagram", { spec: GOOD, save_to: "..\\win-escape.png" })).isError).toBe(true);
+    // a file whose *name* starts with ".." is inside the root and must be accepted
+    expect((await call("render_diagram", { spec: GOOD, save_to: "..lookalike.png" })).isError).toBe(false);
+    // symlink / junction pointing outside the root
+    const outside = mkdtempSync(join(tmpdir(), "dgm-outside-"));
+    try {
+      symlinkSync(outside, join(root, "link"), "junction");
+      const r = await call("render_diagram", { spec: GOOD, save_to: "link/leak.png" });
+      expect(r.isError).toBe(true);
+      expect(r.text).toMatch(/outside the project root/);
+      expect(existsSync(join(outside, "leak.png"))).toBe(false);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it("create_theme refuses to replace a saved theme unless overwrite=true", async () => {
+    const args = { name: "once-only", accent: "#4f7a5a", save: true };
+    expect((await call("create_theme", args)).isError).toBe(false);
+    expect((await call("create_theme", args)).isError).toBe(true);
+    expect((await call("create_theme", { ...args, overwrite: true })).isError).toBe(false);
   });
 
   it("themes: list, create (with contrast check), save, preview", async () => {

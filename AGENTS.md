@@ -17,21 +17,22 @@ In OpenCode, switch to the **`diagram-specialist`** agent (Tab) — it owns this
 
 ```
 npm install && npm run build      # build all packages (the MCP server runs from packages/mcp/dist)
-npm test                          # vitest (73 tests; docs YAML blocks are validated too)
+npm test                          # vitest (docs and skill YAML blocks are validated too)
 node packages/cli/dist/index.js --help
 npm run demo:dev                  # Astro + MDX demo
 ```
 
-OpenCode **Desktop** keeps its config in a background service: after adding/changing agents, commands, skills or `opencode.json`
-run `opencode-cli.exe reload` (see docs/agents.md) or restart the app.
+OpenCode loads agents, commands, skills and `opencode.json` at startup: restart it after changing them (Desktop notes in docs/agents.md).
 
 Rebuild (`npm run build`) after changing `packages/*/src` — the CLI, MCP server and Vite plugin run from `dist/`.
 
 ## Rules
 
 - **Never commit official icons.** Azure/AWS zips go in `icons-inbox/<pack>/` (git-ignored); `dgm icons update` extracts them to
-  `.dgm/icons/`. Don't download them for the user.
+  `.dgm/icons/`. Don't download them for the user. Never alter the icons' shapes (see ICONS-DISCLAIMER.md);
+  `docs/img/` holds rendered example diagrams only.
 - Diagram files are `*.diagram.yaml`; themes are `*.theme.yaml` (registered in `dgm.config.json`).
-- Writes by the MCP server are confined to the project root; don't work around that.
+- Writes by the MCP server are confined to the project root and never replace existing files without `overwrite=true`; don't work around that.
+- Theme/palette values and icon SVGs end up inside the exported SVG: keep them validated (`packages/core/src/theme.ts`, `icons/sanitize.ts`; tests in `security.test.ts`).
 - After editing `skills/diagram-author/**`, run the tests (they validate every YAML block in it).
 - The installed copy `.claude/skills/diagram-author/` is generated (`dgm skill install`); edit `skills/diagram-author/`.

@@ -1,6 +1,6 @@
 ---
 layout: ../layouts/Post.astro
-title: Arquitectura web en Azure
+title: Web architecture on Azure
 ---
 import { Diagram } from "@dgm/react";
 import arch, { narrow } from "../diagrams/azure-landing-zone.diagram.yaml";
@@ -10,29 +10,29 @@ import icons from "../diagrams/icons-lucide.diagram.yaml";
 import Playground from "../components/Playground.tsx";
 import sage from "../themes/sage.theme.yaml";
 
-Este post muestra un diagrama **interactivo**: pasa el ratón sobre un recurso para ver sus conexiones,
-haz clic para fijarlo, o recorre los pasos con los botones.
+This post shows an **interactive** diagram: hover a resource to see its connections,
+click to pin it, or walk through the steps with the buttons.
 
-<Diagram client:visible svg={arch} narrowSvg={narrow} caption="Figura 1. Hub-and-spoke (variante vertical en pantallas estrechas, definida por el autor)." minWidth={900} />
+<Diagram client:visible svg={arch} narrowSvg={narrow} caption="Figure 1. Hub-and-spoke (vertical variant on narrow screens, defined by the author)." minWidth={900} />
 
-Después del diagrama el texto sigue con normalidad, y el mismo YAML se exporta a PNG para el RSS o las redes.
+After the diagram the text continues as usual, and the same YAML exports to PNG for RSS or social media.
 
-## Un flujo
+## A flow
 
-<Diagram client:visible svg={flow} aspectRatio="4/3" maxWidth={520} align="center" caption="Figura 2. aspectRatio=4/3, maxWidth=520, centrado." minWidth={300} />
+<Diagram client:visible svg={flow} aspectRatio="4/3" maxWidth={520} align="center" caption="Figure 2. aspectRatio=4/3, maxWidth=520, centred." minWidth={300} />
 
-## Un modelo de datos
+## A data model
 
-<Diagram client:visible svg={er} caption="Figura 3. Entidad-relación con cardinalidades." minWidth={640} />
+<Diagram client:visible svg={er} caption="Figure 3. Entity-relationship with cardinalities." minWidth={640} />
 
-## Temas y modo
+## Themes and mode
 
-Cualquier tema se aplica en caliente (variables CSS), sin reconstruir el SVG:
+Any theme applies live (CSS variables), without rebuilding the SVG:
 
 <Playground client:visible svg={flow} sage={sage} />
 
-## Iconos
+## Icons
 
-Lucide viene incluido (`lu-…`). Los iconos oficiales de Azure (`az-…`) y AWS (`aws-…`) se importan en local con `dgm icons sync`.
+Lucide is bundled (`lu-…`). The official Azure (`az-…`) and AWS (`aws-…`) icons are imported locally with `dgm icons update`.
 
-<Diagram client:visible svg={icons} caption="Figura 4. Iconos Lucide en tarjetas, con tono semántico (tone: data / warn)." minWidth={420} />
+<Diagram client:visible svg={icons} caption="Figure 4. Lucide icons on cards, with semantic tone (tone: data / warn)." minWidth={420} />

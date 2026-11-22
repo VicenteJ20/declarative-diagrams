@@ -1,6 +1,19 @@
 {
   "name": "diagrams-maker",
   "private": true,
+  "license": "MIT",
+  "author": "Vicente Jorquera",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git"
+  },
+  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "bugs": {
+    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "workspaces": [
     "packages/*",

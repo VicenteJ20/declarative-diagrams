@@ -31,3 +31,9 @@ icons-inbox/*
 
 # installed copy of skills/diagram-author (regenerate with `dgm skill install`)
 .claude/skills/diagram-author/
+
+# editor / tooling
+.claude/launch.json
+.vscode/
+.idea/
+coverage/

@@ -8,6 +8,16 @@ export interface PngOptions extends Omit<RenderOptions, "static"> {
   background?: string;
 }
 
+/**
+ * PNG text is drawn with system fonts (resvg), so pick sensible defaults per OS. Output therefore differs slightly
+ * between machines; the interactive SVG uses the browser's fonts instead.
+ */
+function systemFonts() {
+  if (process.platform === "win32") return { defaultFontFamily: "Segoe UI", serifFamily: "Georgia", sansSerifFamily: "Segoe UI" };
+  if (process.platform === "darwin") return { defaultFontFamily: "Helvetica Neue", serifFamily: "Georgia", sansSerifFamily: "Helvetica Neue" };
+  return { defaultFontFamily: "DejaVu Sans", serifFamily: "DejaVu Serif", sansSerifFamily: "DejaVu Sans" };
+}
+
 export async function renderPng(spec: DiagramSpec, opts: PngOptions = {}): Promise<Buffer> {
   const { theme, mode } = resolveRenderTheme(spec, opts);
   const dark = mode === "dark";
@@ -16,7 +26,7 @@ export async function renderPng(spec: DiagramSpec, opts: PngOptions = {}): Promi
   const resvg = new Resvg(svg, {
     background: bg === "transparent" ? undefined : bg,
     fitTo: { mode: "zoom", value: opts.scale ?? 2 },
-    font: { loadSystemFonts: true, defaultFontFamily: "Segoe UI", serifFamily: "Georgia", sansSerifFamily: "Segoe UI" },
+    font: { loadSystemFonts: true, ...systemFonts() },
   });
   return resvg.render().asPng();
 }

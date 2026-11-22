@@ -47,8 +47,21 @@ export function slugFor(pack: string, path: string): { primary: string; full: st
   return { primary: prefix + stripped, full: prefix + slug };
 }
 
+/** Guard rails against zip bombs / oversized downloads (official packs are ~1.5k small SVGs). */
+export const ZIP_LIMITS = { maxFiles: 20_000, maxFileBytes: 2_000_000, maxTotalBytes: 200_000_000, maxDownloadBytes: 100_000_000 };
+
 function zipEntries(buf: Uint8Array): Entry[] {
-  const files = unzipSync(buf, { filter: (f) => /\.svg$/i.test(f.name) && !/(^|\/)(__MACOSX\/|\.)/.test(f.name) });
+  let n = 0;
+  let total = 0;
+  const files = unzipSync(buf, {
+    filter: (f) => {
+      if (!/\.svg$/i.test(f.name) || /(^|\/)(__MACOSX\/|\.)/.test(f.name)) return false;
+      total += f.originalSize;
+      if (++n > ZIP_LIMITS.maxFiles || f.originalSize > ZIP_LIMITS.maxFileBytes || total > ZIP_LIMITS.maxTotalBytes)
+        throw new Error("zip rejected: too many or too large SVG files (limits in ZIP_LIMITS)");
+      return true;
+    },
+  });
   return Object.entries(files).map(([path, u8]) => ({ path: path.replace(/\\/g, "/"), data: Buffer.from(u8).toString("utf8") }));
 }
 
@@ -106,7 +119,11 @@ export async function syncPack(pack: OfficialPack, from: string, dest = ".dgm/ic
   if (/^https?:\/\//i.test(from)) {
     const res = await fetch(from);
     if (!res.ok) throw new Error(`download failed: HTTP ${res.status} for ${from}`);
-    entries = zipEntries(new Uint8Array(await res.arrayBuffer()));
+    const len = Number(res.headers.get("content-length") ?? 0);
+    if (len > ZIP_LIMITS.maxDownloadBytes) throw new Error(`download too large (${len} bytes)`);
+    const body = new Uint8Array(await res.arrayBuffer());
+    if (body.length > ZIP_LIMITS.maxDownloadBytes) throw new Error(`download too large (${body.length} bytes)`);
+    entries = zipEntries(body);
   } else {
     if (!existsSync(from)) throw new Error(`not found: ${from}`);
     entries = statSync(from).isDirectory() ? dirEntries(resolve(from)) : zipEntries(readFileSync(resolve(from)));

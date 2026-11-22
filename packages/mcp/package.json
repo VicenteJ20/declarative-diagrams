@@ -1,14 +1,44 @@
 {
   "name": "@dgm/mcp",
   "version": "0.1.0",
+  "license": "MIT",
+  "author": "Vicente Jorquera",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "bugs": {
+    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
-  "bin": { "dgm-mcp": "dist/index.js" },
+  "bin": {
+    "dgm-mcp": "dist/index.js"
+  },
   "main": "dist/server.js",
-  "scripts": { "build": "tsup src/index.ts src/server.ts --format esm --clean" },
+  "scripts": {
+    "build": "tsup src/index.ts src/server.ts --format esm --clean"
+  },
   "dependencies": {
-    "@dgm/core": "*",
+    "@dgm/core": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "yaml": "^2.6.0",
     "zod": "^3.23.8"
-  }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "diagrams",
+    "svg",
+    "yaml",
+    "architecture",
+    "mcp",
+    "azure",
+    "aws"
+  ]
 }

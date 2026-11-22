@@ -1,12 +1,29 @@
 {
   "name": "site-demo",
   "private": true,
+  "license": "MIT",
+  "author": "Vicente Jorquera",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git"
+  },
+  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "bugs": {
+    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
-  "scripts": { "dev": "astro dev", "build": "astro build", "preview": "astro preview" },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
   "dependencies": {
     "@astrojs/mdx": "^4.0.0",
     "@astrojs/react": "^4.0.0",
-    "@dgm/react": "*",
+    "@dgm/react": "^0.1.0",
     "astro": "^5.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

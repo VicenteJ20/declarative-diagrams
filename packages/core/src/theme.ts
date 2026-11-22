@@ -13,6 +13,16 @@ export interface CssOptions {
   font?: FontMode;
 }
 
+/** A value that can be interpolated into the embedded `<style>` without breaking out of it (no `<>{};&\`, comments, `url(`/`@import`). */
+export function isSafeCssValue(v: unknown): v is string {
+  return typeof v === "string" && v.length > 0 && v.length < 300 && !/[<>{};&\\]|\/\*|\*\/|url\s*\(|@import|expression\s*\(|javascript:/i.test(v);
+}
+
+function safe(v: string, what: string): string {
+  if (!isSafeCssValue(v)) throw new Error(`unsafe CSS value for ${what}: ${JSON.stringify(String(v).slice(0, 40))}`);
+  return v;
+}
+
 /**
  * Stylesheet embedded in the SVG.
  * Interactive output reads `--dgm-<token>` (light) / `--dgm-dark-<token>` (dark) from the host page when set,
@@ -21,9 +31,9 @@ export interface CssOptions {
 export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
   const lit = !!o.literal;
   const lm: TokenMap = (o.mode === "dark" ? theme.dark : theme.light) ?? {};
-  const v = (k: string) => (lit ? (lm[k] ?? "#000") : `var(--${k})`);
-  const serif0 = theme.fonts.serif ?? SERIF;
-  const sans0 = theme.fonts.sans ?? SANS;
+  const v = (k: string) => (lit ? safe(lm[k] ?? "#000", k) : `var(--${k})`);
+  const serif0 = safe(theme.fonts.serif ?? SERIF, "fonts.serif");
+  const sans0 = safe(theme.fonts.sans ?? SANS, "fonts.sans");
   const font = o.font ?? theme.font ?? "mixed";
   const serif = font === "sans" ? sans0 : serif0; // `sans`: annotations/title use the sans face too
   const sans = font === "serif" ? serif0 : sans0; // `serif`: labels use the serif face too
@@ -31,7 +41,7 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
   const fSans = lit ? sans : `var(--dgm-sans,${sans})`;
 
   const decls = (t: TokenMap, prefix: string) =>
-    TOKEN_KEYS.filter((k) => t[k]).map((k) => `--${k}:var(${prefix}${k},${t[k]})`).join(";");
+    TOKEN_KEYS.filter((k) => t[k]).map((k) => `--${k}:var(${prefix}${k},${safe(t[k], k)})`).join(";");
 
   const toneRules = TONES.map(
     (t) =>
@@ -40,7 +50,7 @@ export function css(theme: ResolvedTheme, o: CssOptions = {}): string {
   ).join("");
 
   // nested zones: a faint tint of the panel line over the panel — visible against both the page and the white node cards
-  const zone = lit ? mixHex(lm["panel-stroke"] ?? "#ddd", lm["panel-a"] ?? "#fff", 0.35) : `color-mix(in srgb, ${v("panel-stroke")} 35%, ${v("panel-a")})`;
+  const zone = lit ? mixHex(safe(lm["panel-stroke"] ?? "#ddd", "panel-stroke"), safe(lm["panel-a"] ?? "#fff", "panel-a"), 0.35) : `color-mix(in srgb, ${v("panel-stroke")} 35%, ${v("panel-a")})`;
 
   const vars = lit
     ? ""

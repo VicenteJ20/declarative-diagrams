@@ -31,8 +31,7 @@ notesPosition: side          # or below
 
 Design the phone version for **≤ 520 px of canvas width** (on a 360 px screen a 1400 px canvas shows 12 px labels at 3 px).
 `dgm render … --variant narrow` (or `dgm_render_diagram variant=narrow`) reports `phone view` and warns when it is too wide.
-Sites that inline SVGs export it next to the wide one (`<name>.<lang>.narrow.svg`) and swap them with a media query; the portfolio's
-`Diagram.astro` does this automatically.
+Sites that inline SVGs export it next to the wide one (`<name>.<lang>.narrow.svg`) and swap them with a media query; a site component (e.g. an Astro `Diagram.astro`) can do this automatically.
 
 ```mdx
 import arch, { narrow } from "./arch.diagram.yaml";

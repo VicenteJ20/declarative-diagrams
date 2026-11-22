@@ -19,6 +19,51 @@ export function kebab(s: string): string {
     .toLowerCase();
 }
 
+/** Elements kept from an icon (allowlist). Everything else is dropped; some are dropped *with* their content. */
+const ALLOWED_TAGS = new Set(
+  (
+    "g path rect circle ellipse line polyline polygon text tspan defs symbol use lineargradient radialgradient stop " +
+    "clippath mask pattern marker filter style " +
+    "feblend fecolormatrix fecomponenttransfer fecomposite feconvolvematrix fediffuselighting fedisplacementmap " +
+    "fedropshadow feflood fefunca fefuncb fefuncg fefuncr fegaussianblur feimage femerge femergenode femorphology " +
+    "feoffset fespecularlighting fetile feturbulence fedistantlight fepointlight fespotlight"
+  ).split(" "),
+);
+/** Dropped together with everything inside them. */
+const DROP_WITH_CONTENT = /<(script|foreignObject|title|desc|metadata|animate\w*|set|iframe|object|embed|audio|video|canvas|image|a|switch)\b[\s\S]*?(?:<\/\1\s*>|$)/gi;
+
+const unsafeUrl = (v: string) => /javascript\s*:|data\s*:|vbscript\s*:|expression\s*\(|@import|url\(\s*['"]?\s*(?!#)/i.test(v);
+
+/** Keep only allowlisted elements and attributes; `href` may only point at in-document `#ids`. */
+export function sanitizeInner(src: string): string {
+  let s = src.replace(DROP_WITH_CONTENT, "");
+  s = s.replace(/<style\b[^>]*>([\s\S]*?)(?:<\/style\s*>|$)/gi, (_m, css: string) =>
+    unsafeUrl(css) || /<|]]>/.test(css) ? "" : `<style>${css}</style>`,
+  );
+  const stash: string[] = [];
+  s = s.replace(/<style>[\s\S]*?<\/style>/g, (m) => `\u0000${stash.push(m) - 1}\u0000`);
+  // every remaining tag: allowlisted name, safe attributes; stray "<" that is not a tag is escaped
+  s = s.replace(/<(\/?)([a-zA-Z][\w:.-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>|<(?![\u0000])/g, (m, close?: string, name?: string, rest?: string) => {
+    if (name === undefined) return "&lt;";
+    if (!ALLOWED_TAGS.has(name.toLowerCase())) return "";
+    if (close) return `</${name}>`;
+    const selfClose = /\/\s*$/.test(rest ?? "");
+    let attrs = "";
+    for (const a of (rest ?? "").matchAll(/([^\s"'=<>\/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
+      const k = a[1];
+      const val = a[2] ?? a[3] ?? a[4] ?? "";
+      const lk = k.toLowerCase();
+      if (lk.startsWith("on")) continue;
+      if (lk === "href" || lk === "xlink:href") {
+        if (!/^\s*#/.test(val)) continue;
+      } else if (unsafeUrl(val)) continue;
+      attrs += ` ${k}="${val.replace(/"/g, "&quot;")}"`;
+    }
+    return `<${name}${attrs}${selfClose ? "/" : ""}>`;
+  });
+  return s.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => stash[+i]);
+}
+
 /**
  * Parse an SVG file into icon data. Removes scripts, event handlers, foreignObject, <image>,
  * external references and <style>/<title> noise. `mono` recolours via currentColor (custom packs only).
@@ -41,15 +86,7 @@ export function parseSvg(src: string, opts: { mono?: boolean } = {}): IconData {
     viewBox = w && h ? `0 0 ${w} ${h}` : "0 0 24 24";
   }
 
-  inner = inner
-    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
-    .replace(/<foreignObject\b[\s\S]*?<\/foreignObject>/gi, "")
-    .replace(/<image\b[^>]*\/?>(\s*<\/image>)?/gi, "")
-    .replace(/<title\b[\s\S]*?<\/title>/gi, "")
-    .replace(/<desc\b[\s\S]*?<\/desc>/gi, "")
-    .replace(/<metadata\b[\s\S]*?<\/metadata>/gi, "")
-    .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*')/gi, "")
-    .replace(/\s+(?:xlink:)?href\s*=\s*("(?!#)[^"]*"|'(?!#)[^']*')/gi, "");
+  inner = sanitizeInner(inner);
 
   if (opts.mono) {
     inner = inner.replace(/\s(fill|stroke)\s*=\s*"(?!none)[^"]*"/gi, "");

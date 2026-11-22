@@ -22,7 +22,7 @@ changes what surrounds them. Lucide and `monochrome` custom icons follow the the
 ## Official Azure / AWS packs — synced locally, never committed
 
 Microsoft and AWS allow their icons in architecture diagrams and documentation, but redistribution inside a package or
-repo is not clearly allowed, so this project ships **none**. You import the official download once:
+repo is not clearly allowed, so this project ships **none** (see [ICONS-DISCLAIMER](../ICONS-DISCLAIMER.md)). You import the official download once:
 
 1. Download the Azure icons (<https://learn.microsoft.com/azure/architecture/icons/>) and/or the AWS icons
    (<https://aws.amazon.com/architecture/icons/>) — read their terms. Both come as a `.zip`.

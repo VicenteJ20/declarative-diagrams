@@ -353,7 +353,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
 
   const title = spec.title ? `<text class="title" x="0" y="18">${esc(spec.title)}</text>` : "";
   const dataSteps = spec.steps.length
-    ? ` data-steps='${JSON.stringify(
+    ? ` data-steps="${esc(JSON.stringify(
         spec.steps.map((s, k) => {
           const members = [...stepsOf.entries()].filter(([, ks]) => ks.includes(k)).map(([id]) => id);
           const seq = buildSequence(
@@ -363,7 +363,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
           );
           return { title: s.title, text: s.text, seq };
         }),
-      ).replace(/'/g, "&#39;")}'`
+      ))}"`
     : "";
   const themeAttr = !isStatic && mode !== "auto" ? ` data-mode="${mode}"` : "";
   const script =

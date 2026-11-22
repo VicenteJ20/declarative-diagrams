@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -70,11 +70,26 @@ export function createServer(opts: ServerOptions): McpServer {
   const refresh = () => loadConfig(root); // picks up new themes / icon packs on every call
 
   /** Resolve a user-supplied path inside the project root (refuses to escape it). */
+  const realRoot = existsSync(root) ? realpathSync(root) : root;
+  const contained = (base: string, target: string) => {
+    const rel = relative(base, target);
+    return rel === "" || (rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel));
+  };
   const inRoot = (p: string): string => {
     const abs = isAbsolute(p) ? resolve(p) : resolve(root, p);
-    const rel = relative(root, abs);
-    if (rel.startsWith("..") || isAbsolute(rel)) throw new Error(`path "${p}" is outside the project root (${root})`);
+    if (!contained(root, abs)) throw new Error(`path "${p}" is outside the project root (${root})`);
+    // follow symlinks/junctions: the deepest existing ancestor must still resolve inside the root
+    let probe = abs;
+    while (!existsSync(probe) && dirname(probe) !== probe) probe = dirname(probe);
+    if (existsSync(probe) && !contained(realRoot, realpathSync(probe))) throw new Error(`path "${p}" resolves outside the project root (symlink?)`);
     return abs;
+  };
+  /** Output path for generated artefacts: right extension, and never silently replaces an existing file. */
+  const outFile = (p: string, exts: string[], overwrite?: boolean): string => {
+    if (!exts.includes(extname(p).toLowerCase())) throw new Error(`"${p}" must end in ${exts.join(" or ")}`);
+    const f = inRoot(p);
+    if (existsSync(f) && !overwrite) throw new Error(`${p} already exists. Pass overwrite=true to replace it.`);
+    return f;
   };
 
   const readSpecText = (a: { spec?: string; path?: string }): { text: string; source: string } => {
@@ -286,6 +301,7 @@ export function createServer(opts: ServerOptions): McpServer {
         description: z.string().optional(),
         overrides: z.record(z.unknown()).optional().describe("Optional explicit token overrides, e.g. { light: { 'panel-a': '#eceed9' }, dark: { accent: '#a9bb62' } }."),
         save: z.boolean().optional(),
+        overwrite: z.boolean().optional().describe("With save: replace an existing themes/<name>.theme.yaml."),
       },
     },
     async (a) => {
@@ -301,7 +317,7 @@ export function createServer(opts: ServerOptions): McpServer {
         let saved: string | undefined;
         let registered: boolean | undefined;
         if (a.save) {
-          const file = inRoot(join("themes", `${a.name}.theme.yaml`));
+          const file = outFile(join("themes", `${a.name}.theme.yaml`), [".yaml"], a.overwrite);
           mkdirSync(dirname(file), { recursive: true });
           writeFileSync(file, yaml);
           saved = relative(root, file);
@@ -431,7 +447,8 @@ export function createServer(opts: ServerOptions): McpServer {
         scale: z.number().min(0.5).max(4).optional().describe("PNG zoom (default 2)."),
         static: z.boolean().optional().describe("SVG without script/animation."),
         allow_missing_icons: z.boolean().optional(),
-        save_to: z.string().optional().describe("Output path inside the project (.png / .svg)."),
+        save_to: z.string().optional().describe("Output path inside the project (.png / .svg, matching the format). Refuses to replace an existing file unless overwrite=true."),
+        overwrite: z.boolean().optional().describe("Allow save_to to replace an existing file."),
       },
     },
     async (a) => {
@@ -451,7 +468,7 @@ export function createServer(opts: ServerOptions): McpServer {
           const png = await renderPng(spec, { ...ro, scale: a.scale });
           let saved = "";
           if (a.save_to) {
-            const f = inRoot(a.save_to);
+            const f = outFile(a.save_to, [".png"], a.overwrite);
             mkdirSync(dirname(f), { recursive: true });
             writeFileSync(f, png);
             saved = ` Saved to ${relative(root, f)}.`;
@@ -462,7 +479,7 @@ export function createServer(opts: ServerOptions): McpServer {
         }
         const svg = await renderSvg(spec, { ...ro, static: a.static });
         if (a.save_to) {
-          const f = inRoot(a.save_to);
+          const f = outFile(a.save_to, [".svg"], a.overwrite);
           mkdirSync(dirname(f), { recursive: true });
           writeFileSync(f, svg);
           const sz = svgSize(svg);

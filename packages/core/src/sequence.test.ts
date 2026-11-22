@@ -29,7 +29,9 @@ describe("steps in the exported SVG", () => {
     });
     expect(res.ok).toBe(true);
     const svg = await renderSvg(res.spec!);
-    expect(svg).toContain('"seq":[["a"],["b","a->b"]]');
+    const raw = /data-steps="([^"]*)"/.exec(svg)![1];
+    const decoded = raw.replace(/&quot;/g, '"').replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+    expect(decoded).toContain('"seq":[["a"],["b","a->b"]]');
   });
   it("rejects an unknown id in sequence", () => {
     const res = validateSpec({ nodes: [{ id: "a", label: "A" }], steps: [{ title: "s", show: ["a"], sequence: ["zzz"] }] });
