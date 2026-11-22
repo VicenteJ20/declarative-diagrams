@@ -201,3 +201,52 @@ describe("vendor look: stacked members get their own ports", () => {
     expect(checkConnections(l, { labels: true })).toEqual([]);
   });
 });
+
+import { applyVariant } from "./index.js";
+
+describe("dynamic features keep working in the vendor looks", () => {
+  const nodes = [
+    { id: "u", label: "User", icon: "lu-user" },
+    { id: "cloud", label: "Cloud", kind: "cloud", color: "#232F3E", children: [{ id: "g", label: "Group", kind: "group", children: [{ id: "a", label: "A", icon: "lu-server" }, { id: "b", label: "B", icon: "lu-database" }] }] },
+  ];
+  const base = { nodes, edges: [{ from: "u", to: "a", label: "go", flow: true }, { from: "a", to: "b" }], steps: [{ title: "one", show: ["u", "a"] }, { title: "two", show: ["a", "b"] }] };
+
+  for (const look of ["official", "azure"] as const) {
+    it(`${look}: the interactive SVG carries the hooks the runtime needs (ids, parents, steps, packets, script)`, async () => {
+      const r = validateSpec({ ...base, look });
+      expect(r.ok).toBe(true);
+      const svg = await renderSvg(r.spec!);
+      expect(svg).toMatch(/<g class="el node[^"]*" tabindex="0" role="button"[^>]* data-id="a"/);
+      expect(svg).toMatch(/<g class="el cont[^"]*" data-id="g" data-parent="cloud"/);
+      expect(svg).toContain('data-steps="');
+      expect(svg).toMatch(/<g class="el edge" data-id="u-&gt;a|<g class="el edge" data-id="u->a"/);
+      expect(svg).toContain('class="pkt"'); // animated flow
+      expect(svg).toContain("<script>");
+      expect(svg).toContain(".dgm.look-official .cont.hl rect"); // container highlight wins over the inline outline colour
+    });
+    it(`${look}: static output has no script, no custom properties and still renders to PNG`, async () => {
+      const r = validateSpec({ ...base, look });
+      const svg = await renderSvg(r.spec!, { static: true });
+      expect(svg).not.toContain("<script");
+      expect(svg).not.toContain("var(--");
+      expect((await renderPng(r.spec!)).length).toBeGreaterThan(100);
+    });
+  }
+
+  it("a phone variant works with the vendor look: hiding a group hides its children, canvas stays phone-sized, no crossings", async () => {
+    const spec = validateSpec({ ...base, look: "azure", variants: { narrow: { hide: ["g"] } } });
+    expect(spec.ok).toBe(true);
+    const phone = applyVariant(spec.spec!, "narrow")!;
+    expect(JSON.stringify(phone.nodes)).not.toContain('"id":"a"');
+    expect(phone.edges).toEqual([]);
+    expect(phone.steps.map((x) => x.show)).toEqual([["u"]]); // step one keeps only what is left, step two disappears
+
+    const spec2 = validateSpec({ ...base, look: "azure", variants: { narrow: { hide: ["b"] } } });
+    const phone2 = applyVariant(spec2.spec!, "narrow")!;
+    expect(phone2.direction).toBe("DOWN");
+    const report: { connections?: string[] } = {};
+    const svg = await renderSvg(phone2, { static: true, report });
+    expect(Number(/width="([\d.]+)"/.exec(svg)![1])).toBeLessThanOrEqual(520);
+    expect(report.connections).toEqual([]);
+  });
+});

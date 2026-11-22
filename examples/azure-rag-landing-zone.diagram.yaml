@@ -109,3 +109,9 @@ steps:
   - { title: 2 · Grounded answer, show: [app, pe, openai, search, cosmos] }
   - { title: 3 · Document ingestion, show: [docs, blob, grid, func, docint, openai, search] }
   - { title: 4 · Operations, show: [app, kv, law, mon, fw] }
+variants:
+  # phone version: the chat path only (ingestion, shared services and identity are left to the wide diagram)
+  narrow:
+    hide: [docs, ingest, hub, ops, entra, cosmos]
+    nodes:
+      users: { label: Staff }

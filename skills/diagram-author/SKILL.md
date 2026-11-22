@@ -108,7 +108,7 @@ Full reference: `get_authoring_guide topic=spec`.
       nodes:                     # per-node overrides, only on the phone version
         mai: { stackWith: null } # un-stack: its own row instead of sitting beside others
         storage: { label: SQLite, sublabel: local data }   # shorter text
-      hide: [legend-only-node]   # drop secondary nodes (their edges/notes/step entries go too)
+      hide: [legend-only-node]   # drop secondary nodes (their edges/notes/step entries go too); hiding a container hides everything inside it
   ```
   Nested containers make ugly phone layouts (edges loop around siblings, one tall column). Collapse them for the phone: `hide` the children and give the
   container the merged text (`data: { label: Data, sublabel: SQLite · FTS5 }`) so it becomes one box; then `stackWith` such boxes side by side to avoid skip-edges.
@@ -117,6 +117,8 @@ Full reference: `get_authoring_guide topic=spec`.
   `dgm_render_diagram variant=narrow` and LOOK at it: the report says `phone view` and warns when the width is too big. Export both:
   wide → `<name>.<lang>.svg`, phone → `<name>.<lang>.narrow.svg` (`variant=narrow`, `format=svg`, `save_to`). Keep the same node ids
   and step order in every language.
+
+**Vendor looks on a phone.** `look: official|azure` diagrams work with `variants.narrow` too (vertical, wrapped title, same interactivity). Keep only the main path for the phone: hide ingestion/shared-service groups and secondary icons, then check the render report (`phone view`, no `CONNECTION CHECK`). Examples: the `variants` block of `examples/aws-genai-chatbot.diagram.yaml` and `examples/azure-rag-landing-zone.diagram.yaml`.
 
 ## Themes and mode
 

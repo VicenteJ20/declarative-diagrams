@@ -97,3 +97,9 @@ steps:
   - { title: 4 · Routing and auth, show: [cdn, apigw, cognito, edge] }
   - { title: 5 · Orchestration, show: [apigw, orch, sessions, rag] }
   - { title: 6 · RAG and inference, show: [orch, rag, ssm, aurora, llm] }
+variants:
+  # phone version: one column, only the chat path (hiding a group hides what is inside it)
+  narrow:
+    hide: [r53, waf, edge, sessions, ssm, web, cognito, corp, g-data]
+    nodes:
+      sales: { label: Sales rep }

@@ -166,7 +166,9 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const below = spec.notesPosition === "below";
   const GUTTER = spec.notes.length && !below ? NOTE_W + 40 : 0;
   const subLines = official && spec.subtitle ? wrap(spec.subtitle, Math.max(40, Math.floor((layout.width + GUTTER) / 6.6))) : [];
-  const titleH = spec.title ? (official ? 44 + subLines.length * 17 + 14 : 44) : 0;
+  // vendor looks: a long title wraps (phone variants are narrower than the title)
+  const titleLines = official && spec.title ? wrap(spec.title, Math.max(14, Math.floor((layout.width + GUTTER) / 12))) : [];
+  const titleH = spec.title ? (official ? 22 + titleLines.length * 26 + subLines.length * 17 + 14 : 44) : 0;
   const stepperH = spec.steps.length ? 40 : 0;
   const ox = 0;
   const oy = titleH;
@@ -445,8 +447,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const ruleW = layout.width + GUTTER;
   const title = spec.title
     ? official
-      ? `<text class="title" x="0" y="22">${esc(spec.title)}</text>` +
-        subLines.map((l, i) => `<text class="subtitle" x="0" y="${44 + i * 17}">${esc(l)}</text>`).join("") +
+      ? titleLines.map((l, i) => `<text class="title" x="0" y="${22 + i * 26}">${esc(l)}</text>`).join("") +
+        subLines.map((l, i) => `<text class="subtitle" x="0" y="${22 + (titleLines.length - 1) * 26 + 22 + i * 17}">${esc(l)}</text>`).join("") +
         `<line class="rule" x1="0" x2="${n(ruleW)}" y1="${titleH - 8}" y2="${titleH - 8}"/><line class="rule" x1="0" x2="${n(ruleW)}" y1="${titleH - 4}" y2="${titleH - 4}"/>`
       : `<text class="title" x="0" y="18">${esc(spec.title)}</text>`
     : "";

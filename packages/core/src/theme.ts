@@ -41,15 +41,16 @@ function azure(v: (k: string) => string): string {
 }
 
 /** `look: official` overrides: flat icons without cards, outlined groups, thin black connectors, square badges. */
-function official(v: (k: string) => string): string {
+function official(v: (k: string) => string, fSans: string): string {
   return `
-.dgm.look-official .title{font-family:var(--dgm-sans,${SANS});font-style:normal;font-weight:700;font-size:21px}
+.dgm.look-official .title{font-family:${fSans};font-style:normal;font-weight:700;font-size:21px}
 .dgm.look-official .subtitle{font-size:12.5px;fill:${v("text")}}
 .dgm.look-official .rule{stroke:${v("text")};stroke-width:1}
 .dgm.look-official .cont rect{fill:none;stroke:${v("text")};stroke-width:1.3}
 .dgm.look-official .cont .head{font-weight:400;font-size:12.5px}
 .dgm.look-official .node.stacked rect{fill:transparent;stroke:transparent}
 .dgm.look-official .node.stacked.hl rect{stroke:${v("accent")}}
+.dgm.look-official .cont.hl rect{stroke:${v("accent")} !important;stroke-width:2}
 .dgm.look-official .node .head{font-weight:400;font-size:12px}
 .dgm.look-official .node .sub{font-size:11px}
 .dgm.look-official .ico{color:${v("text")}}
@@ -156,7 +157,7 @@ ${toneRules}
 .dgm .legend text{font-size:11px;fill:${v("muted")}}
 .dgm .legend-rule{stroke:${v("panel-stroke")};stroke-width:1}
 .dgm .leader{fill:none;stroke:${v("muted")};stroke-width:.8;stroke-dasharray:1.5 2.5}
-${o.look === "official" || o.look === "azure" ? official(v) : ""}${o.look === "azure" ? azure(v) : ""}
+${o.look === "official" || o.look === "azure" ? official(v, fSans) : ""}${o.look === "azure" ? azure(v) : ""}
 ${interactive}
 `;
 }

@@ -186,6 +186,15 @@ export function applyVariant(spec: DiagramSpec, name: "narrow"): DiagramSpec | n
   const v = spec.variants?.[name];
   if (!v) return null;
   const hide = new Set(v.hide ?? []);
+  // hiding a container hides everything inside it (otherwise its children's edges would dangle)
+  const collect = (list: NodeSpec[], inHidden: boolean) => {
+    for (const n of list) {
+      const h = inHidden || hide.has(n.id);
+      if (h) hide.add(n.id);
+      if (n.children) collect(n.children, h);
+    }
+  };
+  collect(spec.nodes, false);
   const patch = v.nodes ?? {};
   const mapNodes = (list: NodeSpec[]): NodeSpec[] =>
     list
