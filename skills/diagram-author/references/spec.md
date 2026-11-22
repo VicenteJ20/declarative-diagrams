@@ -9,6 +9,8 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `type` | `architecture` (default) · `flow` · `er` · `network` (same engine; the type is documentation/intent) |
 | `title`, `description` | title drawn on top (serif italic); description is the accessible text (`<desc>`) |
 | `direction` | `RIGHT` (default) or `DOWN` |
+| `look` | `default` (Distill: tinted panels, card nodes) or `official` (vendor-style, like AWS/Azure reference diagrams: big flat icons, outlined groups, square blue numbered badges, black connectors, bold title + `subtitle` + double rule). Also `dgm render --look official` / `look` on `render_diagram` |
+| `subtitle` | line under the title (drawn in the `official` look) |
 | `theme` | theme name or inline theme (see themes.md). Render options override it |
 | `font` | `mixed` (default) · `sans` · `serif` — typeface style of the whole diagram |
 | `palette` | token overrides: `{ accent: "#…", dark: { accent: "#…" }, tones: { data: "#…" } }` |
@@ -31,6 +33,7 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `badge` | small circle on the node with a sequence marker (`1`, `2`, `A`…) |
 | `variant` | `card` or `stacked` (defaults: `lu-` → card; official/custom → stacked) |
 | `placement` | `below` (top-level node, flow `RIGHT`): drawn in a row **under** the diagram, centred under the node it connects to, instead of a new column to the right. Use it for the optional cloud / external box — keeps the canvas ≤ 3:1 and avoids horizontal scroll. In flow `DOWN` it ends up under the main block, the link running down the right margin |
+| `color`, `border` | containers, `look: official`: outline colour `#hex` and `solid`/`dashed`/`tinted` (solid + light fill). Defaults per kind: `cloud` dark, `aws.vpc` green, `aws.subnet` blue tinted, `group` grey dashed… Examples: ECS cluster `color: "#ED7100", border: dashed`; Step Functions `color: "#E7157B"` |
 | `tone` | `compute data network neutral accent ok warn danger info` — semantic colour from the theme |
 | `children` | makes it a **container**; children are laid out inside it, recursively |
 | `fields` | for `kind: entity`: `[{ name, type, key: pk|fk }]` |

@@ -1,13 +1,15 @@
 # Needs the official AWS icons imported locally:  dgm icons update   (see docs/icons.md)
 type: architecture
+look: official
 title: GenerativeAI-powered chatbot solution
-description: Chatbot solution to provide the sales department of the company with a virtual assistant, which can summarize knowledge base data and help quickly find relevant information.
+subtitle: Chatbot solution to provide the sales department of the company with a virtual assistant, which can summarize knowledge base data and help quickly find relevant information.
+description: Retrieval-augmented chatbot on AWS - web frontend, authenticated API, RAG Lambda with an LLM provider, and a daily ingestion pipeline.
 direction: RIGHT
 notesPosition: below
 nodes:
-  - { id: sales, label: Sales representative, icon: lu-user, variant: stacked }
-  - { id: llm, label: LLM Provider, icon: lu-monitor, variant: stacked }
-  - { id: corp, label: Corporate storage, icon: lu-files, variant: stacked }
+  - { id: sales, label: Sales representative, icon: lu-user }
+  - { id: llm, label: LLM Provider, icon: lu-monitor }
+  - { id: corp, label: Corporate storage, icon: lu-files }
   - id: aws
     label: AWS Cloud
     kind: cloud
@@ -36,36 +38,38 @@ nodes:
         label: AWS Step Functions workflow
         kind: group
         icon: aws-step-functions
+        color: "#E7157B"
+        border: solid
         children:
           - { id: batch, label: SageMaker, sublabel: BatchTransform, icon: aws-sagemaker }
           - { id: langchain, label: ECS, sublabel: Langchain, icon: aws-elastic-container-service }
 edges:
   # 3 · web delivery
-  - { from: sales, to: cdn, label: HTTPS, flow: true }
-  - { from: r53, to: cdn, label: DNS, style: dashed }
-  - { from: waf, to: cdn, label: inspects, style: dashed }
+  - { from: sales, to: cdn, flow: true }
+  - { from: r53, to: cdn, style: dashed }
+  - { from: waf, to: cdn, style: dashed }
   - { from: cdn, to: web, flow: true }
   # 4 · routing and authentication
   - { from: cdn, to: apigw, flow: true }
-  - { from: apigw, to: cognito, label: authenticate }
+  - { from: apigw, to: cognito }
   - { from: edge, to: cognito, style: dashed }
   # 5 · orchestration and session log
   - { from: apigw, to: orch, flow: true }
-  - { from: orch, to: sessions, label: session }
+  - { from: orch, to: sessions }
   - { from: orch, to: rag, flow: true }
   # 6 · RAG query and LLM inference
-  - { from: rag, to: ssm, label: token }
-  - { from: rag, to: aurora, label: embeddings }
-  - { from: rag, to: llm, label: prompt + context, flow: true }
+  - { from: rag, to: ssm }
+  - { from: rag, to: aurora }
+  - { from: rag, to: llm, flow: true }
   # 1 · daily ingestion
-  - { from: sched1, to: pipeline, label: daily, style: dashed }
-  - { from: corp, to: pipeline, label: files }
-  - { from: pipeline, to: kb, label: by date }
+  - { from: sched1, to: pipeline, style: dashed }
+  - { from: corp, to: pipeline }
+  - { from: pipeline, to: kb }
   # 2 · embeddings
   - { from: sched2, to: sfn, style: dashed }
   - { from: kb, to: batch }
   - { from: batch, to: langchain }
-  - { from: langchain, to: aurora, label: store }
+  - { from: langchain, to: aurora }
 notes:
   - { target: pipeline, text: "Daily data ingestion. EventBridge Scheduler triggers an ECS task every day to fetch data files with a predefined format and creation date from the corporate storage, then copies them to an S3 bucket partitioned by date." }
   - { target: sfn, text: "Processing and embeddings. EventBridge Scheduler starts a Step Functions workflow in two steps: a SageMaker BatchTransform job extracts the information from the documents and saves it to S3, then an ECS task generates the embeddings and stores them in Aurora." }

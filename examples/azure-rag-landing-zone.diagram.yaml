@@ -2,6 +2,7 @@
 type: architecture
 title: Enterprise RAG assistant on Azure — hub-and-spoke landing zone
 description: Employees chat with an assistant grounded on corporate documents. Traffic enters through Front Door, is governed by API Management, and reaches Azure OpenAI and AI Search over private endpoints. Documents are ingested asynchronously. Fictional example.
+look: official
 direction: RIGHT
 notesPosition: below
 nodes:

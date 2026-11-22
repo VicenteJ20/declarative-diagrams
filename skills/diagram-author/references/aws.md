@@ -98,6 +98,10 @@ edges:
 Inside the VPC, one `aws.az` container per zone, each holding its subnets; put the load balancer **in the VPC but outside the AZ
 containers** (it spans them). Use a dashed edge with `label: replication` between the two database nodes.
 
+## Vendor-style (official) look
+
+For diagrams that should look like the ones in AWS documentation, set `look: official` (see `examples/aws-genai-chatbot.diagram.yaml`): the `kind: cloud` container with the `aws-cloud` icon becomes the dark **AWS Cloud** tab, groups are outlined (`aws.vpc` green, `aws.subnet` tinted, logical groups `border: dashed` + `color`), every icon is big and flat with the label below, steps are square blue numbers (`notes` + `notesPosition: below` give the numbered legend), and connectors are thin black lines. Prefer few edge labels in this look; use `subtitle` for the one-line purpose.
+
 ## Tips
 
 - Multi-account (organisation) diagrams: one `aws.account` container per account side by side; label cross-account edges

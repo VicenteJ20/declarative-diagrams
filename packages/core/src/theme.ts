@@ -11,6 +11,8 @@ export interface CssOptions {
   mode?: "light" | "dark";
   /** Typeface style; default `mixed`. */
   font?: FontMode;
+  /** `official`: vendor-style diagram (flat icons, outlined groups, black connectors, square badges). */
+  look?: "default" | "official";
 }
 
 /** A value that can be interpolated into the embedded `<style>` without breaking out of it (no `<>{};&\`, comments, `url(`/`@import`). */
@@ -21,6 +23,31 @@ export function isSafeCssValue(v: unknown): v is string {
 function safe(v: string, what: string): string {
   if (!isSafeCssValue(v)) throw new Error(`unsafe CSS value for ${what}: ${JSON.stringify(String(v).slice(0, 40))}`);
   return v;
+}
+
+/** Blue of the numbered step badges in vendor reference diagrams. */
+const OFFICIAL_BADGE = "#3F6FBE";
+
+/** `look: official` overrides: flat icons without cards, outlined groups, thin black connectors, square badges. */
+function official(v: (k: string) => string): string {
+  return `
+.dgm.look-official .title{font-family:var(--dgm-sans,${SANS});font-style:normal;font-weight:700;font-size:21px}
+.dgm.look-official .subtitle{font-size:12.5px;fill:${v("text")}}
+.dgm.look-official .rule{stroke:${v("text")};stroke-width:1}
+.dgm.look-official .cont rect{fill:none;stroke:${v("text")};stroke-width:1.3}
+.dgm.look-official .cont .head{font-weight:400;font-size:12.5px}
+.dgm.look-official .node.stacked rect{fill:transparent;stroke:transparent}
+.dgm.look-official .node.stacked.hl rect{stroke:${v("accent")}}
+.dgm.look-official .node .head{font-weight:400;font-size:12px}
+.dgm.look-official .node .sub{font-size:11px}
+.dgm.look-official .ico{color:${v("text")}}
+.dgm.look-official .edge .line{stroke:${v("text")};stroke-width:1.3}
+.dgm.look-official .edge.dashed .line{stroke-dasharray:4 3}
+.dgm.look-official marker path{fill:${v("text")}}
+.dgm.look-official .elabel text{fill:${v("text")}}
+.dgm.look-official .mark rect{fill:${OFFICIAL_BADGE};stroke:none}
+.dgm.look-official .mark text{fill:#fff;font-size:11px;font-weight:700}
+.dgm.look-official .legend text{fill:${v("text")}}`;
 }
 
 /**
@@ -117,6 +144,7 @@ ${toneRules}
 .dgm .legend text{font-size:11px;fill:${v("muted")}}
 .dgm .legend-rule{stroke:${v("panel-stroke")};stroke-width:1}
 .dgm .leader{fill:none;stroke:${v("muted")};stroke-width:.8;stroke-dasharray:1.5 2.5}
+${o.look === "official" ? official(v) : ""}
 ${interactive}
 `;
 }

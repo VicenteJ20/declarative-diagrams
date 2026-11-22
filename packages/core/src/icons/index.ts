@@ -10,6 +10,9 @@ export type { IconData } from "./sanitize.js";
 
 /** Stacked node (icon on top, label below): visible box like a card, icon in a tinted tile (mono) or full-colour (official). */
 export const STACK_ICON = 32; // tile diameter / official icon size
+/** Icon size of stacked nodes in the `official` look (cloud-vendor style: big flat icons). */
+export const STACK_ICON_OFFICIAL = 48;
+export const stackIconSize = (look?: string) => (look === "official" ? STACK_ICON_OFFICIAL : STACK_ICON);
 export const STACK_GLYPH = 20; // mono glyph inside the tile (≈ 1.6× the 12.5px label — never the dominant element)
 export const STACK_PAD = 10;
 export const CARD_ICON = 22;

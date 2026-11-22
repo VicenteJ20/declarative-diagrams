@@ -1,7 +1,7 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 import { DiagramSpec, NodeSpec, edgeIds } from "./spec.js";
 import { kindOf } from "./kinds.js";
-import { nodeIcon, STACK_ICON, STACK_PAD, HEAD_ICON } from "./icons/index.js";
+import { nodeIcon, stackIconSize, STACK_ICON as STACK_ICON_SMALL, STACK_PAD, HEAD_ICON } from "./icons/index.js";
 
 export interface Pt {
   x: number;
@@ -73,11 +73,12 @@ function groupSiblings(list: NodeSpec[]): (NodeSpec | Stack)[] {
 }
 
 /** Size of a leaf node (what ELK reserves for it). */
-function leafBox(n: NodeSpec): { width: number; height: number } {
+function leafBoxI(n: NodeSpec, ico: number): { width: number; height: number } {
   const ic = nodeIcon(n);
   if (ic?.variant === "stacked") {
-    const wl = Math.max(textW(n.label, 12.5, true), n.sublabel ? textW(n.sublabel, 10.5) : 0) + 32;
-    return { width: Math.ceil(Math.max(104, wl)), height: STACK_PAD + STACK_ICON + (n.sublabel ? 34 : 20) + STACK_PAD };
+    const official = ico > STACK_ICON_SMALL; // vendor look: tight boxes so arrows touch the icons
+    const wl = Math.max(textW(n.label, 12.5, true), n.sublabel ? textW(n.sublabel, 10.5) : 0) + (official ? 14 : 32);
+    return { width: Math.ceil(Math.max(official ? ico + 20 : 104, wl)), height: STACK_PAD + ico + (n.sublabel ? 34 : 20) + STACK_PAD };
   }
   const shape = kindOf(n.kind).shape;
   if (shape === "entity" && n.fields?.length) {
@@ -93,7 +94,7 @@ function leafBox(n: NodeSpec): { width: number; height: number } {
 }
 
 /** Y of the line edges should use: the icon's centre for stacked (icon + label) nodes, else the box centre. */
-const lineY = (n: NodeSpec, h: number) => (nodeIcon(n)?.variant === "stacked" ? STACK_PAD + STACK_ICON / 2 : h / 2);
+const lineYI = (n: NodeSpec, h: number, ico: number) => (nodeIcon(n)?.variant === "stacked" ? STACK_PAD + ico / 2 : h / 2);
 
 interface Rect {
   x: number;
@@ -151,6 +152,9 @@ async function layoutCore(spec: DiagramSpec, mins: Map<number, number> = new Map
 }
 
 async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>): Promise<Layout> {
+  const ico = stackIconSize(spec.look);
+  const leafBox = (n: NodeSpec) => leafBoxI(n, ico);
+  const lineY = (n: NodeSpec, h: number) => lineYI(n, h, ico);
   const ids = edgeIds(spec);
   const flowRight = spec.direction === "RIGHT";
   const meta = new Map<string, { spec: NodeSpec; depth: number; parent?: string }>();

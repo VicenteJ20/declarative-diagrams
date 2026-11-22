@@ -97,7 +97,7 @@ import { Diagram } from "@dgm/react";
 
 ## Showcase: two larger architectures
 
-Both are plain YAML ([`aws-genai-chatbot`](examples/aws-genai-chatbot.diagram.yaml), [`azure-rag-landing-zone`](examples/azure-rag-landing-zone.diagram.yaml)) with numbered notes, step-by-step scenarios and the official icons (imported locally, see above). Fictional examples.
+Both use `look: official` (vendor-style: flat icons, outlined groups, numbered badges — `dgm render --look official`) and are plain YAML ([`aws-genai-chatbot`](examples/aws-genai-chatbot.diagram.yaml), [`azure-rag-landing-zone`](examples/azure-rag-landing-zone.diagram.yaml)) with numbered notes, step-by-step scenarios and the official icons (imported locally, see above). Fictional examples.
 
 ![GenAI chatbot on AWS](docs/img/aws-genai-chatbot.png)
 

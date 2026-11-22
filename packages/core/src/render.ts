@@ -1,8 +1,8 @@
 import { buildSequence } from "./sequence.js";
-import { DiagramSpec, edgeIds } from "./spec.js";
+import { DiagramSpec, NodeSpec, edgeIds } from "./spec.js";
 import { Layout, LEdge, Pt, layoutSpec, textW, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
 import { kindOf } from "./kinds.js";
-import { nodeIcon, IconEmitter, diagramNs, STACK_ICON, STACK_GLYPH, STACK_PAD, CARD_ICON, HEAD_ICON } from "./icons/index.js";
+import { nodeIcon, IconEmitter, diagramNs, stackIconSize, STACK_GLYPH, STACK_PAD, CARD_ICON, HEAD_ICON } from "./icons/index.js";
 import { css } from "./theme.js";
 import { Mode, isMode, getDefaultTheme, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme, FontMode } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
@@ -22,6 +22,8 @@ export interface RenderOptions {
   padding?: number;
   /** Token overrides applied on top of the theme (merged over `spec.palette`). */
   palette?: Palette;
+  /** `official`: vendor-style look (flat icons, outlined groups, square numbered badges). Overrides `spec.look`. */
+  look?: "default" | "official";
   /** Embed the runtime <script> in the SVG (standalone use). React sets this to false and attaches itself. */
   embedRuntime?: boolean;
 }
@@ -73,10 +75,46 @@ function glyphSvg(kind?: string): string {
   return inner;
 }
 
-export async function renderSvg(spec: DiagramSpec, opts: RenderOptions = {}): Promise<string> {
-  const layout = await layoutSpec(spec);
-  return renderLayout(spec, layout, opts);
+/** `official` look: every leaf with an icon is a flat stacked icon unless the author chose a variant. */
+function withLook(spec: DiagramSpec, look?: "default" | "official"): DiagramSpec {
+  const l = look ?? spec.look;
+  if (l !== "official") return look ? { ...spec, look } : spec;
+  const map = (list: NodeSpec[]): NodeSpec[] =>
+    list.map((nd) => ({
+      ...nd,
+      ...(nd.icon && !nd.variant && !nd.children?.length ? { variant: "stacked" as const } : {}),
+      ...(nd.children ? { children: map(nd.children) } : {}),
+    }));
+  return { ...spec, look: "official", nodes: map(spec.nodes) };
 }
+
+export async function renderSvg(spec: DiagramSpec, opts: RenderOptions = {}): Promise<string> {
+  const eff = withLook(spec, opts.look);
+  const layout = await layoutSpec(eff);
+  return renderLayout(eff, layout, opts);
+}
+
+/** Default outline of vendor-style groups (AWS / Azure reference diagrams); `color` / `border` on a container override it. */
+const GROUP_LOOK: Record<string, { color: string; border?: "dashed" | "tinted" }> = {
+  cloud: { color: "#232F3E" },
+  "aws.org": { color: "#E7157B" },
+  "aws.account": { color: "#E7157B" },
+  "aws.region": { color: "#00A4A6", border: "dashed" },
+  "aws.vpc": { color: "#248814" },
+  "aws.az": { color: "#147EBA", border: "dashed" },
+  "aws.subnet": { color: "#147EBA", border: "tinted" },
+  group: { color: "#7D8998", border: "dashed" },
+  onprem: { color: "#7D8998", border: "dashed" },
+  network: { color: "#8C4FFF" },
+  subnet: { color: "#147EBA", border: "tinted" },
+  "azure.tenant": { color: "#0078D4" },
+  "azure.management-group": { color: "#0078D4", border: "dashed" },
+  "azure.subscription": { color: "#0078D4", border: "dashed" },
+  "azure.resource-group": { color: "#0078D4", border: "dashed" },
+  "azure.vnet": { color: "#0078D4" },
+  "azure.subnet": { color: "#0078D4", border: "tinted" },
+};
+const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 /** Precedence: render option > spec > default. `theme: "dark"` (legacy) is read as a mode. */
 export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { theme: ResolvedTheme; mode: Mode; font: FontMode } {
@@ -93,6 +131,8 @@ export function resolveRenderTheme(spec: DiagramSpec, opts: RenderOptions): { th
 export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOptions = {}): string {
   const isStatic = !!opts.static;
   const { theme, mode, font } = resolveRenderTheme(spec, opts);
+  const official = (opts.look ?? spec.look) === "official";
+  const ICO = stackIconSize(official ? "official" : "default");
   const ids = edgeIds(spec);
   const icons = new IconEmitter(diagramNs(JSON.stringify(layout.nodes.map((q) => [q.id, q.spec.icon, q.spec.label]))));
   const nodeById = new Map(layout.nodes.map((nd) => [nd.id, nd]));
@@ -115,7 +155,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const NOTE_W = 190;
   const below = spec.notesPosition === "below";
   const GUTTER = spec.notes.length && !below ? NOTE_W + 40 : 0;
-  const titleH = spec.title ? 44 : 0;
+  const subLines = official && spec.subtitle ? wrap(spec.subtitle, Math.max(40, Math.floor((layout.width + GUTTER) / 6.6))) : [];
+  const titleH = spec.title ? (official ? 44 + subLines.length * 17 + 14 : 44) : 0;
   const stepperH = spec.steps.length ? 40 : 0;
   const ox = 0;
   const oy = titleH;
@@ -141,7 +182,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     .sort((p, q) => (below ? 0 : p.a!.y - q.a!.y));
   let cursor = -Infinity;
   const marker = (x: number, y: number, num: number) =>
-    `<g class="mark" transform="translate(${n(x)} ${n(y)})"><circle r="7.5"/><text y="3.5">${num}</text></g>`;
+    `<g class="mark" transform="translate(${n(x)} ${n(y)})">${official ? `<rect x="-9" y="-9" width="18" height="18" rx="3"/>` : `<circle r="7.5"/>`}<text y="3.5">${num}</text></g>`;
   const noteText = (x: number, y: number, lines: string[]) =>
     `<g class="note-g"><text class="note" x="${n(x)}" y="${n(y)}">` +
     lines.map((l, i) => `<tspan x="${n(x)}" dy="${i === 0 ? 0 : 15}">${esc(l)}</tspan>`).join("") +
@@ -197,6 +238,27 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     if (nd.container) {
       const parity = nd.depth % 2 === 0 ? "even" : "odd";
       const hic = nodeIcon(nd.spec);
+      if (official) {
+        // vendor-style group: outline (colour/dash per kind or author), icon flush in the corner, label beside it
+        const def = GROUP_LOOK[nd.spec.kind ?? ""];
+        const col = nd.spec.color && HEX.test(nd.spec.color) ? nd.spec.color : def?.color;
+        const bd = nd.spec.border ?? def?.border ?? "solid";
+        const ICON = 26;
+        const lx = nd.x + (hic ? ICON + 8 : 10);
+        const ly = nd.y + (hic ? ICON / 2 + 4.5 : 19);
+        const tw = textW(nd.spec.label, 12.5, true);
+        hdrCut.push(`<rect x="${n(nd.x + (hic ? 0 : 6))}" y="${n(nd.y)}" width="${n((hic ? ICON + 8 : 10) + tw + 8)}" height="${ICON}"/>`);
+        const dash = bd === "dashed" ? "stroke-dasharray:6 4;" : "";
+        const tint = bd === "tinted" && col ? `fill:${col};fill-opacity:.1;` : "";
+        const rectStyle = col || dash ? ` style="${col ? `stroke:${col};` : ""}${dash}${tint}"` : "";
+        contSvg +=
+          `<g class="el cont official ${parity}${nd.spec.tone ? ` tn-${nd.spec.tone}` : ""}" ${common}>` +
+          `<rect x="${n(nd.x)}" y="${n(nd.y)}" width="${n(nd.w)}" height="${n(nd.h)}" rx="0"${rectStyle}/>` +
+          (hic ? icons.use(hic.res, nd.x, nd.y, ICON) : "") +
+          `<text class="head" x="${n(lx)}" y="${n(ly)}"${col && nd.spec.kind !== "cloud" ? ` style="fill:${col}"` : ""}>${esc(nd.spec.label)}</text>` +
+          `</g>`;
+        continue;
+      }
       const off = hic ? HEAD_ICON + 8 : 0;
       const hicon = hic ? icons.use(hic.res, nd.x + 10, nd.y + 9, HEAD_ICON) : "";
       const tag = k.tag ? `<text class="tag" x="${n(nd.x + 12 + off)}" y="${n(nd.y + 17)}">${esc(k.tag.toUpperCase())}</text>` : "";
@@ -227,11 +289,14 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
       const ic = nodeIcon(nd.spec);
       if (ic && ic.variant === "stacked") {
         const iy = nd.y + STACK_PAD;
-        const ty = iy + STACK_ICON + 16;
-        // mono icons sit in a tinted tile (same language as the card badge); official icons keep their artwork
+        const ty = iy + ICO + 16;
+        // mono icons sit in a tinted tile (same language as the card badge); official icons keep their artwork.
+        // `official` look: mono icons are plain outlined glyphs (black line art, like the vendor reference diagrams).
         const art = ic.res.data.mono
-          ? `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(cx)} ${n(iy + STACK_ICON / 2)})"><circle r="${STACK_ICON / 2}"/>${icons.use(ic.res, -STACK_GLYPH / 2, -STACK_GLYPH / 2, STACK_GLYPH)}</g>`
-          : icons.use(ic.res, cx - STACK_ICON / 2, iy, STACK_ICON);
+          ? official
+            ? `<g class="ico">${icons.use(ic.res, cx - ICO / 2, iy, ICO)}</g>`
+            : `<g class="badge t-${nd.spec.tone ?? k.tone}" transform="translate(${n(cx)} ${n(iy + ICO / 2)})"><circle r="${ICO / 2}"/>${icons.use(ic.res, -STACK_GLYPH / 2, -STACK_GLYPH / 2, STACK_GLYPH)}</g>`
+          : icons.use(ic.res, cx - ICO / 2, iy, ICO);
         nodeSvg +=
           `<g class="el node stacked${tn}" tabindex="0" ${aria} ${common}>` +
           box(6) +
@@ -285,7 +350,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
         const chunk = nodeSvg.slice(nodeStart);
         nodeSvg =
           nodeSvg.slice(0, nodeStart) +
-          chunk.replace(/<\/g>$/, `<g class="mark bdg" transform="translate(${n(bx)} ${n(by)})"><circle r="9"/><text y="3.8">${esc(String(nd.spec.badge))}</text></g></g>`);
+          chunk.replace(/<\/g>$/, `<g class="mark bdg" transform="translate(${n(bx)} ${n(by)})">${official ? `<rect x="-10" y="-10" width="20" height="20" rx="3"/>` : `<circle r="9"/>`}<text y="3.8">${esc(String(nd.spec.badge))}</text></g></g>`);
       }
     }
   }
@@ -295,7 +360,22 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   spec.edges.forEach((es, i) => {
     const le: LEdge | undefined = edgeById.get(ids[i]);
     if (!le || le.points.length < 2) return;
-    const epts = le.points;
+    // vendor look: connectors touch the icon itself, not the (invisible) box around icon + label
+    const trim = (pts: Pt[], nd: (typeof layout.nodes)[number] | undefined, atStart: boolean): Pt[] => {
+      if (!official || !nd || nd.container || nodeIcon(nd.spec)?.variant !== "stacked" || pts.length < 2) return pts;
+      const i = atStart ? 0 : pts.length - 1;
+      const q = pts[atStart ? 1 : pts.length - 2];
+      const p = { ...pts[i] };
+      const cx = nd.x + nd.w / 2;
+      const onSide = Math.abs(p.x - nd.x) < 1.5 || Math.abs(p.x - (nd.x + nd.w)) < 1.5;
+      if (Math.abs(p.y - q.y) < 0.5 && onSide) p.x = p.x < cx ? cx - ICO / 2 - 3 : cx + ICO / 2 + 3;
+      else if (Math.abs(p.x - q.x) < 0.5 && Math.abs(p.y - nd.y) < 1.5) p.y = nd.y + STACK_PAD - 3;
+      else return pts;
+      const out = pts.slice();
+      out[i] = p;
+      return out;
+    };
+    const epts = trim(trim(le.points, nodeById.get(le.from), true), nodeById.get(le.to), false);
     const d = roundedPath(epts);
     const cls = `el edge${es.style === "dashed" ? " dashed" : ""}`;
     const cutAttr = hdrCut.length ? ' mask="url(#dgm-hdr)"' : ""; // lines go behind container titles; labels stay readable
@@ -352,7 +432,14 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     legend += `</g>`;
   }
 
-  const title = spec.title ? `<text class="title" x="0" y="18">${esc(spec.title)}</text>` : "";
+  const ruleW = layout.width + GUTTER;
+  const title = spec.title
+    ? official
+      ? `<text class="title" x="0" y="22">${esc(spec.title)}</text>` +
+        subLines.map((l, i) => `<text class="subtitle" x="0" y="${44 + i * 17}">${esc(l)}</text>`).join("") +
+        `<line class="rule" x1="0" x2="${n(ruleW)}" y1="${titleH - 8}" y2="${titleH - 8}"/><line class="rule" x1="0" x2="${n(ruleW)}" y1="${titleH - 4}" y2="${titleH - 4}"/>`
+      : `<text class="title" x="0" y="18">${esc(spec.title)}</text>`
+    : "";
   const dataSteps = spec.steps.length
     ? ` data-steps="${esc(JSON.stringify(
         spec.steps.map((s, k) => {
@@ -371,7 +458,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     !isStatic && opts.embedRuntime !== false ? `<script><![CDATA[${RUNTIME_SOURCE}]]></script>` : "";
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="dgm" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="${isStatic ? "img" : "group"}" aria-label="${esc(spec.title ?? "Diagram")}"${themeAttr}${dataSteps}>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="dgm${official ? " look-official" : ""}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="${isStatic ? "img" : "group"}" aria-label="${esc(spec.title ?? "Diagram")}"${themeAttr}${dataSteps}>` +
     `<title>${esc(spec.title ?? "Diagram")}</title>` +
     (spec.description ? `<desc>${esc(spec.description)}</desc>` : "") +
     `<defs>` +
@@ -382,7 +469,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     `<marker id="dgm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1.5L9 5L0 8.5z"/></marker>` +
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +
-    `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light", font })}</style>` +
+    `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light", font, look: official ? "official" : "default" })}</style>` +
     `<g transform="translate(${n(dx)} ${n(dy)})">` +
     title +
     `<g transform="translate(${ox} ${oy})">${contSvg}${edgeSvg}${nodeSvg}${notesSvg}</g>` +
