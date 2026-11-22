@@ -5,6 +5,8 @@
 `<Diagram />` for **MDX / React** sites. Built for cloud architecture (Azure / AWS tenants, subscriptions, accounts, VNets/VPCs,
 subnets, resources and their interactions), flowcharts and ER models — and fully themeable, so diagrams match *your* brand.
 
+**[▶ Try it in the playground](https://vicentej20.github.io/declarative-diagrams/)** — edit the YAML and watch the diagram redraw, switch themes and looks, step through scenarios, export SVG/PNG. Runs entirely in your browser.
+
 ![Azure-style architecture](docs/img/azure-style.png)
 
 <p align="center"><em>Same engine, your own look:</em></p>
@@ -76,7 +78,7 @@ import { Diagram } from "@declarative-diagrams/react";
 
 | Package | What |
 |---|---|
-| `@declarative-diagrams/core` | spec, ELK layout, SVG renderer, themes, icons, PNG export |
+| `@declarative-diagrams/core` | spec, ELK layout, SVG renderer, themes, icons, PNG export; `/browser` entry renders in a web page |
 | `@declarative-diagrams/cli` | `dgm` (alias `declarative-diagrams`): `render / validate / schema / kinds / theme / icons / skill / agent / mcp` |
 | `@declarative-diagrams/react` | `<Diagram />` for MDX + Vite plugin |
 | `@declarative-diagrams/mcp` | MCP server for AI agents |

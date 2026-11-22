@@ -1,0 +1,34 @@
+type: flow
+title: Release pipeline with a rollback path
+description: From a push to production, with a staging gate and an automatic rollback.
+direction: DOWN
+nodes:
+  - { id: push, label: Push to main, kind: start }
+  - { id: build, label: Build and test, kind: process, description: "Runs on Linux, Windows and macOS." }
+  - { id: green, label: Tests green?, kind: decision }
+  - { id: stage, label: Deploy to staging, kind: process }
+  - { id: smoke, label: Smoke tests pass?, kind: decision }
+  - { id: prod, label: Promote to production, kind: process }
+  - { id: done, label: Released, kind: end }
+  - { id: fix, label: Notify the author, kind: end }
+  - { id: back, label: Roll back staging, kind: process }
+edges:
+  - { from: push, to: build }
+  - { from: build, to: green }
+  - { from: green, to: stage, label: "yes", flow: true }
+  - { from: green, to: fix, label: "no", style: dashed }
+  - { from: stage, to: smoke }
+  - { from: smoke, to: prod, label: "yes", flow: true }
+  - { from: smoke, to: back, label: "no", style: dashed }
+  - { from: back, to: fix }
+  - { from: prod, to: done, flow: true }
+notes:
+  - { target: green, text: "A red build never reaches staging; the author is told with the failing job." }
+  - { target: smoke, text: "The same checks run after every deploy, so a bad release is reverted in minutes." }
+steps:
+  - title: Verify
+    show: [push, build, green]
+  - title: Stage and check
+    show: [stage, smoke, back]
+  - title: Ship
+    show: [prod, done]

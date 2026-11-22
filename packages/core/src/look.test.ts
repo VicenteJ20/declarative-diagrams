@@ -250,3 +250,16 @@ describe("dynamic features keep working in the vendor looks", () => {
     expect(report.connections).toEqual([]);
   });
 });
+
+describe("browser entry", () => {
+  it("renders an interactive SVG without the file system, PNG engine or project config", async () => {
+    const core = await import("./browser.js");
+    const res = core.validateSpec(core.parseSpecText("nodes:\n  - { id: a, label: A, icon: lu-server }\n  - { id: b, label: B, icon: lu-database }\nedges:\n  - { from: a, to: b }\n"));
+    expect(res.ok).toBe(true);
+    const svg = await core.renderSvg(res.spec!, { embedRuntime: false });
+    expect(svg).toContain('class="dgm"');
+    expect(svg).not.toContain("<script");
+    expect(Object.keys(core)).not.toContain("renderPng");
+    expect(Object.keys(core)).not.toContain("loadConfig");
+  });
+});

@@ -35,7 +35,9 @@ export const OFFICIAL_URL: Record<string, string> = {
 };
 const ALIASES: Record<string, Record<string, string[]>> = { azure: azureAliases, aws: awsAliases };
 
-const state = { root: process.cwd(), iconsDir: undefined as string | undefined, custom: [] as CustomPack[] };
+/** False in a browser: official/custom packs live on disk, only the bundled Lucide icons resolve. */
+const HAS_FS = typeof process !== "undefined" && !!process.versions?.node;
+const state = { root: HAS_FS ? process.cwd() : "/", iconsDir: undefined as string | undefined, custom: [] as CustomPack[] };
 const cache = new Map<string, unknown>();
 
 /** Called by `loadConfig`; safe to call repeatedly. */
@@ -50,6 +52,7 @@ export function configureIcons(o: { root?: string; iconsDir?: string; custom?: C
 export function iconsDirs(): string[] {
   const out: string[] = [];
   if (state.iconsDir) out.push(state.iconsDir);
+  if (!HAS_FS) return out;
   if (process.env.DGM_ICONS_DIR) out.push(resolve(process.env.DGM_ICONS_DIR));
   let d = state.root;
   for (;;) {

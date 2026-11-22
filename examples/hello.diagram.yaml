@@ -1,0 +1,19 @@
+type: architecture
+title: Hello, diagrams
+description: The smallest useful diagram - a user, a platform with two services, and the flow between them.
+nodes:
+  - { id: users, label: Users, icon: lu-users }
+  - id: app
+    label: Platform
+    kind: cloud
+    children:
+      - { id: api, label: API, sublabel: REST · JSON, icon: lu-server }
+      - { id: db, label: Database, sublabel: Postgres, icon: lu-database }
+edges:
+  - { from: users, to: api, label: HTTPS, flow: true }   # flow: true animates packets along the main path
+  - { from: api, to: db, label: SQL }
+notes:
+  - { target: db, text: "Click any box to follow its connections. Edit the YAML on the left and the diagram redraws as you type." }
+steps:
+  - { title: A request arrives, show: [users, api] }
+  - { title: The API reads data, show: [api, db] }
