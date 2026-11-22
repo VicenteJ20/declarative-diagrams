@@ -137,7 +137,8 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const placed = spec.notes
     .map((nt) => ({ nt, a: anchorOf(nt.target), lines: wrap(nt.text, maxChars) }))
     .filter((p) => p.a)
-    .sort((p, q) => p.a!.y - q.a!.y);
+    // margin notes stack top-down, so they follow the diagram; a list below keeps the author's order (1, 2, 3 …)
+    .sort((p, q) => (below ? 0 : p.a!.y - q.a!.y));
   let cursor = -Infinity;
   const marker = (x: number, y: number, num: number) =>
     `<g class="mark" transform="translate(${n(x)} ${n(y)})"><circle r="7.5"/><text y="3.5">${num}</text></g>`;

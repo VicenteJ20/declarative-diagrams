@@ -23,3 +23,16 @@ describe("render", () => {
     expect(s).not.toContain("var(--");
   });
 });
+
+describe("notes", () => {
+  const spec = {
+    nodes: [{ id: "a", label: "A" }, { id: "b", label: "B" }],
+    edges: [{ from: "a", to: "b" }],
+    notes: [{ target: "b", text: "FIRST-NOTE" }, { target: "a", text: "SECOND-NOTE" }],
+  };
+  const order = (svg: string) => svg.indexOf("FIRST-NOTE") < svg.indexOf("SECOND-NOTE");
+  it("a list below the diagram keeps the author's order", async () => {
+    const r = validateSpec({ ...spec, notesPosition: "below", direction: "DOWN" });
+    expect(order(await renderSvg(r.spec!, { static: true }))).toBe(true);
+  });
+});

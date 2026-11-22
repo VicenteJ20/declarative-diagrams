@@ -95,6 +95,14 @@ import { Diagram } from "@dgm/react";
 
 ![AWS-style architecture](docs/img/aws-style.png)
 
+## Showcase: two larger architectures
+
+Both are plain YAML ([`aws-genai-chatbot`](examples/aws-genai-chatbot.diagram.yaml), [`azure-rag-landing-zone`](examples/azure-rag-landing-zone.diagram.yaml)) with numbered notes, step-by-step scenarios and the official icons (imported locally, see above). Fictional examples.
+
+![GenAI chatbot on AWS](docs/img/aws-genai-chatbot.png)
+
+![Enterprise RAG on Azure](docs/img/azure-rag-landing-zone.png)
+
 ## Contributing
 
 Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Report security problems privately

@@ -13,7 +13,7 @@ A diagram is a YAML (or JSON) document. `get_spec_schema` returns the exact JSON
 | `font` | `mixed` (default) · `sans` · `serif` — typeface style of the whole diagram |
 | `palette` | token overrides: `{ accent: "#…", dark: { accent: "#…" }, tones: { data: "#…" } }` |
 | `legend` | compact key under the diagram: `[{ style: solid, label: Inside }, { style: dashed, label: Optional }]` |
-| `notesPosition` | `side` (margin gutter, default) or `below` (numbered list under the diagram) |
+| `notesPosition` | `side` (margin gutter, default) or `below` (numbered list under the diagram, in the order you write the notes) |
 | `steps[].sequence` | optional reveal order for staggered playback: ids or lists of ids lit together, e.g. `[capture, whisper, [db, index], ask]`; default = follows the arrows |
 | `variants.narrow` | phone version (rendered separately with `variant=narrow`): `{ direction?: DOWN, notesPosition?: below, hide?: [ids], nodes?: { <id>: { label?, sublabel?, stackWith?: <id> \| null } } }`; `{}` = vertical + notes below. `stackWith: null` un-stacks a node; `hide` drops nodes and the edges/notes/step entries that touch them. Aim for ≤ 520 px wide. |
 | `nodes` | list of nodes (required) |

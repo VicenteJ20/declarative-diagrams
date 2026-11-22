@@ -1,0 +1,102 @@
+# Needs the official Azure icons imported locally:  dgm icons update   (see docs/icons.md)
+type: architecture
+title: Enterprise RAG assistant on Azure — hub-and-spoke landing zone
+description: Employees chat with an assistant grounded on corporate documents. Traffic enters through Front Door, is governed by API Management, and reaches Azure OpenAI and AI Search over private endpoints. Documents are ingested asynchronously. Fictional example.
+direction: RIGHT
+notesPosition: below
+nodes:
+  - { id: users, label: Employees, icon: lu-users, variant: stacked }
+  - { id: docs, label: Corporate documents, icon: lu-files, variant: stacked }
+  - { id: afd, label: Front Door, sublabel: WAF, icon: az-front-door-and-cdn-profiles }
+  - id: tenant
+    label: contoso.onmicrosoft.com
+    kind: azure.tenant
+    children:
+      - { id: entra, label: Microsoft Entra ID, sublabel: Tokens and RBAC, icon: lu-shield-check, variant: stacked }
+      - id: hub
+        label: connectivity
+        kind: azure.subscription
+        icon: az-subscription
+        children:
+          - id: hubnet
+            label: vnet-hub
+            kind: azure.vnet
+            icon: az-virtual-networks
+            children:
+              - { id: fw, label: Azure Firewall, sublabel: Egress policy, icon: az-firewalls }
+              - { id: bastion, label: Bastion, icon: az-bastions }
+      - id: prod
+        label: ai-chat-prod
+        kind: azure.subscription
+        icon: az-subscription
+        children:
+          - id: spoke
+            label: vnet-spoke
+            kind: azure.vnet
+            icon: az-virtual-networks
+            children:
+              - { id: apim, label: API Management, sublabel: Validates the JWT, icon: az-api-management-services }
+              - { id: app, label: Chat backend, sublabel: App Service, icon: az-app-services }
+              - { id: pe, label: Private endpoints, icon: az-private-endpoints }
+          - id: ai
+            label: rg-ai
+            kind: azure.resource-group
+            icon: az-resource-groups
+            children:
+              - { id: openai, label: Azure OpenAI, sublabel: gpt + embeddings, icon: az-openai }
+              - { id: search, label: AI Search, sublabel: Vector index, icon: az-cognitive-search }
+              - { id: cosmos, label: Cosmos DB, sublabel: Chat history, icon: az-azure-cosmos-db }
+          - id: ingest
+            label: rg-ingestion
+            kind: azure.resource-group
+            icon: az-resource-groups
+            children:
+              - { id: blob, label: Storage, sublabel: Document landing zone, icon: az-storage-accounts }
+              - { id: grid, label: Event Grid, icon: az-event-grid-topics }
+              - { id: func, label: Function App, sublabel: Chunk + embed, icon: az-function-apps }
+              - { id: docint, label: AI services, sublabel: Document extraction, icon: az-cognitive-services }
+      - id: ops
+        label: management
+        kind: azure.subscription
+        icon: az-subscription
+        children:
+          - { id: kv, label: Key Vault, icon: az-key-vaults }
+          - { id: law, label: Log Analytics, icon: az-log-analytics-workspaces }
+          - { id: mon, label: Monitor, sublabel: Alerts, icon: az-monitor }
+edges:
+  # chat path
+  - { from: users, to: afd, label: HTTPS, flow: true }
+  - { from: afd, to: apim, label: Private Link, flow: true }
+  - { from: apim, to: entra, label: validate token, style: dashed }
+  - { from: apim, to: app, flow: true }
+  - { from: app, to: pe, label: PaaS calls, flow: true }
+  - { from: pe, to: openai, label: completion }
+  - { from: pe, to: search, label: vector query }
+  - { from: pe, to: cosmos, label: history }
+  - { from: app, to: kv, label: "secrets (MI)", style: dashed }
+  - { from: app, to: fw, label: egress, style: dashed }
+  # ingestion path
+  - { from: docs, to: blob, label: upload }
+  - { from: blob, to: grid, label: blob created, style: dashed }
+  - { from: grid, to: func, style: dashed }
+  - { from: func, to: docint, label: extract }
+  - { from: func, to: openai, label: embeddings }
+  - { from: func, to: search, label: index }
+  # operations
+  - { from: app, to: law, label: telemetry, style: dashed }
+  - { from: law, to: mon }
+notes:
+  - { target: afd, text: "Entry point. Azure Front Door with WAF terminates TLS and reaches API Management through Private Link, so the backend has no public endpoint." }
+  - { target: apim, text: "Governance. API Management validates the Microsoft Entra ID token, applies rate limits and forwards the request to the chat backend." }
+  - { target: pe, text: "Private data plane. The backend reaches Azure OpenAI, AI Search and Cosmos DB through private endpoints; public network access is disabled on all of them." }
+  - { target: search, text: "Grounding. The backend retrieves the most relevant chunks from the vector index and sends them with the question to Azure OpenAI; the answer and its citations are stored as chat history." }
+  - { target: func, text: "Asynchronous ingestion. A new document triggers Event Grid, then a Function extracts the text, chunks it, generates embeddings and indexes them. The chat path is never blocked." }
+  - { target: kv, text: "Operations. Secrets live in Key Vault and are read with managed identities; telemetry goes to Log Analytics and alerts to Monitor. Administration goes through Bastion." }
+legend:
+  - { style: solid, label: Request / data path }
+  - { style: dashed, label: "Control, async or telemetry" }
+steps:
+  - { title: 1 · A question arrives, show: [users, afd, apim, entra, app] }
+  - { title: 2 · Grounded answer, show: [app, pe, openai, search, cosmos] }
+  - { title: 3 · Document ingestion, show: [docs, blob, grid, func, docint, openai, search] }
+  - { title: 4 · Operations, show: [app, kv, law, mon, fw, bastion] }
