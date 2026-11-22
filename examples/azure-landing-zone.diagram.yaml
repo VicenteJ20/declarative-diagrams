@@ -1,90 +1,67 @@
 type: architecture
-title: Azure web app — one subscription, hub-and-spoke
-description: Users reach an App Gateway in the hub; the app tier talks to SQL and Key Vault through private endpoints.
+title: Azure web app — hub-and-spoke landing zone
+description: Users reach an Application Gateway in the hub; the app tier talks to SQL and Key Vault through private endpoints. Fictional example.
+look: default   # the Distill look, with your own theme (here: olive) — AWS and Azure house styles are look: official | azure
+direction: RIGHT
+notesPosition: below
 nodes:
-  - id: users
-    label: Users
-    kind: user
-  - id: tenant
-    label: contoso.onmicrosoft.com
-    kind: azure.tenant
+  - { id: users, label: Users, sublabel: Browser · mobile, icon: lu-users, variant: stacked, placement: left }
+  - id: sub
+    label: prod-workload
+    kind: azure.subscription
     children:
-      - id: sub
-        label: prod-workload
-        kind: azure.subscription
+      - id: hub
+        label: Hub network · vnet-hub
+        kind: group
         children:
-          - id: rg-net
-            label: rg-network
-            kind: azure.resource-group
-            children:
-              - id: hub
-                label: vnet-hub
-                kind: azure.vnet
-                children:
-                  - id: agw
-                    label: App Gateway
-                    sublabel: WAF v2
-                    kind: gateway
-                    description: Terminates TLS and applies WAF rules before traffic enters the spoke.
-                  - id: fw
-                    label: Azure Firewall
-                    kind: firewall
-          - id: rg-app
-            label: rg-app
-            kind: azure.resource-group
-            children:
-              - id: spoke
-                label: vnet-spoke
-                kind: azure.vnet
-                children:
-                  - id: snet-app
-                    label: snet-app
-                    kind: azure.subnet
-                    children:
-                      - id: web
-                        label: App Service
-                        sublabel: P1v3
-                        kind: compute
-                      - id: fn
-                        label: Worker
-                        kind: function
-                  - id: snet-data
-                    label: snet-data
-                    kind: azure.subnet
-                    children:
-                      - id: sql
-                        label: Azure SQL
-                        kind: database
-                        description: Reachable only through a private endpoint; public access disabled.
-                      - id: kv
-                        label: Key Vault
-                        kind: secret
-          - id: rg-obs
-            label: rg-observability
-            kind: azure.resource-group
-            children:
-              - id: mon
-                label: Log Analytics
-                kind: monitor
+          - { id: agw, label: App Gateway, sublabel: WAF v2 · TLS, icon: lu-shield-check, variant: stacked, description: Terminates TLS and applies WAF rules before traffic enters the spoke. }
+          - { id: fw, label: Azure Firewall, sublabel: Egress policy, icon: lu-flame, variant: stacked }
+      - id: app
+        label: Application · snet-app
+        kind: group
+        children:
+          - { id: fn, label: Worker, sublabel: Queue-triggered, icon: lu-zap, variant: stacked }
+          - { id: web, label: App Service, sublabel: P1v3 · managed identity, icon: lu-monitor, variant: stacked, stackWith: fn }
+      - id: data
+        label: Data · snet-data
+        kind: group
+        children:
+          - { id: sql, label: Azure SQL, sublabel: Private endpoint only, icon: lu-database, variant: stacked, description: Reachable only through a private endpoint; public access disabled. }
+          - { id: kv, label: Key Vault, sublabel: Secrets · keys, icon: lu-lock-keyhole, variant: stacked, stackWith: sql }
+  - id: obs
+    label: Observability · rg-observability
+    kind: group
+    placement: below
+    children:
+      - { id: mon, label: Log Analytics, sublabel: Logs · alerts, icon: lu-activity, variant: stacked }
 edges:
   - { from: users, to: agw, label: HTTPS, flow: true }
   - { from: agw, to: fw }
-  - { from: fw, to: web, flow: true, label: peering }
+  - { from: fw, to: web, label: peering, flow: true }
   - { from: web, to: sql, label: private endpoint, flow: true }
   - { from: web, to: kv, style: dashed }
   - { from: fn, to: sql }
   - { from: web, to: mon, style: dashed, label: diagnostics }
 notes:
-  - { target: agw, text: "All inbound traffic is inspected here first." }
-  - { target: "web->sql", text: "Queries never leave the Microsoft backbone." }
-  - { target: kv, text: "Secrets are fetched with a managed identity — no connection strings in config." }
+  - { target: agw, text: "All inbound traffic is inspected here first: TLS ends and the WAF rules run before anything enters the spoke." }
+  - { target: fw, text: "The hub firewall is the only path between the hub and the spoke, so every flow is logged and filtered." }
+  - { target: sql, text: "Queries never leave the Microsoft backbone: the database has no public endpoint, only a private one." }
+  - { target: kv, text: "Secrets are fetched with a managed identity — no connection strings in configuration." }
+legend:
+  - { style: solid, label: Request / data path }
+  - { style: dashed, label: Control or telemetry }
 steps:
   - title: A request comes in
     show: [users, agw, fw, web]
   - title: The app reads data
-    show: [web, sql, kv]
+    show: [web, fn, sql, kv]
   - title: Everything is logged
     show: [web, mon, "web->mon"]
 
 variants:
-  narrow: {}   # vertical layout + notes below; only used when <Diagram narrowSvg=...> opts in
+  # phone version (used when <Diagram narrowSvg=...> opts in): one column, the request path and its data
+  narrow:
+    hide: [fn, obs]
+    nodes:
+      web: { stackWith: null, sublabel: P1v3 }
+      sql: { sublabel: Private only }

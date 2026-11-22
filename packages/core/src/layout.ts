@@ -147,7 +147,7 @@ function retarget(points: Pt[], atStart: boolean, comp: Rect, m: Rect, flowRight
 /** Layout, then (when `zoneWidth: equal`) once more with every container of the same depth as wide as the widest one: tidy bands. */
 async function layoutCore(spec: DiagramSpec, mins: Map<number, number> = new Map()): Promise<Layout> {
   let first = await layoutOnce(spec, mins);
-  if (isVendorLook(spec.look)) {
+  {
     // second pass: now that the neighbours' positions are known, give each connector the port that avoids crossings
     const centre = new Map<string, number>();
     for (const n of first.nodes) centre.set(n.id, spec.direction === "RIGHT" ? n.y + n.h / 2 : n.x + n.w / 2);
@@ -212,6 +212,7 @@ function placeLabel(pts: Pt[], text: string, nodes: LNode[], lines: Pt[][], plac
 async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: Map<string, number>): Promise<Layout> {
   const ico = stackIconSize(spec.look);
   const official = isVendorLook(spec.look);
+  const spread = true; // one port per edge on icon + label nodes, ordered by a second pass (every look: arrowheads never share a point)
   const leafBox = (n: NodeSpec) => leafBoxI(n, ico);
   const lineY = (n: NodeSpec, h: number) => lineYI(n, h, ico);
   const ids = edgeIds(spec);
@@ -262,7 +263,7 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
         const cy = o.y + lineY(m, o.h);
         const cx = o.x + o.w / 2;
         const mk = (suffix: string, x: number, y: number, side: string) => ({ id: `${item.id}|${m.id}|${suffix}`, x, y, width: 0, height: 0, layoutOptions: { "elk.port.side": side } });
-        if (!official) return flowRight ? [mk("W", 0, cy, "WEST"), mk("E", W, cy, "EAST")] : [mk("N", cx, 0, "NORTH"), mk("S", cx, H, "SOUTH")];
+        if (!spread) return flowRight ? [mk("W", 0, cy, "WEST"), mk("E", W, cy, "EAST")] : [mk("N", cx, 0, "NORTH"), mk("S", cx, H, "SOUTH")];
         // vendor look: one port per edge that leaves the stack, spread over the icon
         const inside = (id: string) => item.members.some((q) => q.id === id);
         const outN = spec.edges.filter((e) => e.from === m.id && !inside(e.to)).length;
@@ -312,12 +313,12 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
         const step = k > 1 ? Math.min(12, (ico - 12) / (k - 1)) : 0;
         return Array.from({ length: k }, (_, j) => {
           const p = at((j - (k - 1) / 2) * step);
-          return mk(official ? `${suffix}|${j}` : suffix, p.x, p.y, side);
+          return mk(spread ? `${suffix}|${j}` : suffix, p.x, p.y, side);
         });
       };
       const outN = spec.edges.filter((e) => e.from === n.id).length;
       const inN = spec.edges.filter((e) => e.to === n.id).length;
-      const one = (c: number) => (official ? c : 1);
+      const one = (c: number) => (spread ? c : 1);
       const ports = flowRight
         ? [...many("W", one(inN), (o) => ({ x: 0, y: cy + o }), "WEST"), ...many("E", one(outN), (o) => ({ x: box.width, y: cy + o }), "EAST")]
         : [...many("N", one(inN), (o) => ({ x: box.width / 2 + o, y: 0 }), "NORTH"), ...many("S", one(outN), (o) => ({ x: box.width / 2 + o, y: box.height }), "SOUTH")];
@@ -342,7 +343,7 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
   const internal = (e: { from: string; to: string }) => owner.has(e.from) && owner.get(e.from) === owner.get(e.to);
   // port index of every (edge, role): connectors of one side ordered by where their other end is
   const portIdx = new Map<string, number>();
-  if (official) {
+  if (spread) {
     const sides = new Map<string, { key: string; other: number }[]>();
     spec.edges.forEach((e, i) => {
       if (internal(e)) return;
@@ -358,9 +359,9 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
   const endpoint = (id: string, role: "src" | "tgt", ei: number) => {
     const suffix = flowRight ? (role === "src" ? "E" : "W") : role === "src" ? "S" : "N";
     const st = owner.get(id);
-    if (st) return official ? `${st}|${id}|${suffix}|${portIdx.get(`${ei}|${role}`) ?? 0}` : `${st}|${id}|${suffix}`;
+    if (st) return spread ? `${st}|${id}|${suffix}|${portIdx.get(`${ei}|${role}`) ?? 0}` : `${st}|${id}|${suffix}`;
     if (!ported.has(id)) return id;
-    if (!official) return `${id}|${suffix}`;
+    if (!spread) return `${id}|${suffix}`;
     return `${id}|${suffix}|${portIdx.get(`${ei}|${role}`) ?? 0}`;
   };
   // vendor look: labels are placed after routing, so the gap between columns must be wide enough for the longest one (capped)
@@ -444,8 +445,8 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: M
         return nd.y + lineY(nd.spec, nd.h);
       };
       // vendor look: keep the port's own height (one port per edge) instead of snapping every edge to the icon centre
-      if (fs) points = retarget(points, true, stackRects.get(fs)!, nodeById.get(es.from)!, flowRight, official ? points[0].y : cyOf(es.from));
-      if (ts) points = retarget(points, false, stackRects.get(ts)!, nodeById.get(es.to)!, flowRight, official ? points[points.length - 1].y : cyOf(es.to));
+      if (fs) points = retarget(points, true, stackRects.get(fs)!, nodeById.get(es.from)!, flowRight, spread ? points[0].y : cyOf(es.from));
+      if (ts) points = retarget(points, false, stackRects.get(ts)!, nodeById.get(es.to)!, flowRight, spread ? points[points.length - 1].y : cyOf(es.to));
     }
     const l = e?.labels?.[0];
     return {
