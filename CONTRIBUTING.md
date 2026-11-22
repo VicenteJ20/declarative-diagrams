@@ -8,7 +8,8 @@ Thanks for helping! Issues and pull requests are welcome.
 git clone https://github.com/VicenteJ20/declarative-diagrams && cd declarative-diagrams
 npm install && npm run build      # Node >= 22; the CLI, MCP server and Vite plugin run from dist/
 npm test                          # vitest; also validates every YAML block in docs and in skills/diagram-author
-npm run demo:dev                  # Astro + MDX demo
+npm run demo:dev                  # the playground / demo site (Astro)
+npm run gallery                   # re-render the AWS/Azure examples shown read-only in the playground (needs the official icon packs imported locally)
 ```
 
 Rebuild (`npm run build`) after changing `packages/*/src`.

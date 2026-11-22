@@ -24,7 +24,8 @@
     "test": "vitest run",
     "example": "node packages/cli/dist/index.js render examples/azure-landing-zone.diagram.yaml -o examples/out/azure-landing-zone.svg",
     "demo:dev": "npm run dev -w site-demo",
-    "demo:build": "npm run build -w site-demo"
+    "demo:build": "npm run build -w site-demo",
+    "gallery": "node scripts/build-gallery.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

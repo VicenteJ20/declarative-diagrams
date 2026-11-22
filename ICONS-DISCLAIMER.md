@@ -11,7 +11,7 @@ Microsoft, Azure, Amazon, AWS and their logos and icons are trademarks or proper
   architectural diagrams, training materials or documentation; do not crop, flip, rotate or distort them. AWS: see the
   [AWS Trademark Guidelines](https://aws.amazon.com/trademark-guidelines/)). The tool never recolours or alters the icons'
   shapes; the surrounding theme is the only thing that changes.
-- The images in `docs/img/` are **example diagrams** that use those icons, shown to illustrate what the tool produces
+- The images in `docs/img/` and the SVGs in `site-demo/public/gallery/` (shown read-only in the online playground) are **example diagrams** that use those icons, shown to illustrate what the tool produces
   (documentation use). They are not a licence to reuse the icons themselves. If Microsoft or AWS asks for their removal,
   they will be removed.
 - Names such as "Azure" and "AWS" appear in this project only to describe compatibility (node kinds, icon prefixes,

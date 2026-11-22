@@ -1,0 +1,51 @@
+type: architecture
+title: Local-first notes app — everything on your machine, cloud optional
+description: A desktop app that captures, indexes and answers questions locally; a cloud gateway is opt-in. Fictional example.
+look: default
+direction: RIGHT
+notesPosition: below
+nodes:
+  - id: pc
+    label: Your computer
+    kind: onprem
+    children:
+      - id: ui
+        label: Desktop UI
+        kind: group
+        children:
+          - { id: web, label: Interface, sublabel: React · TypeScript, icon: lu-monitor, variant: stacked }
+      - id: core
+        label: App core
+        kind: group
+        children:
+          - { id: capture, label: Capture, sublabel: Mic · screen · files, icon: lu-mic, variant: stacked }
+          - { id: index, label: Indexer, sublabel: Chunks · embeddings, icon: lu-sparkles, variant: stacked }
+          - { id: store, label: Local store, sublabel: SQLite · full-text, icon: lu-database, variant: stacked, stackWith: index }
+      - id: models
+        label: Local models
+        kind: group
+        children:
+          - { id: llm, label: Local LLM, sublabel: llama.cpp · GGUF, icon: lu-cpu, variant: stacked }
+  - id: cloud
+    label: Optional cloud
+    kind: cloud
+    placement: below
+    children:
+      - { id: gw, label: LLM gateway, sublabel: HTTPS · your API key, icon: lu-cloud, variant: stacked }
+edges:
+  - { from: web, to: capture, label: invoke, flow: true }
+  - { from: capture, to: index, label: segments, flow: true }
+  - { from: index, to: store, label: upsert }
+  - { from: index, to: llm, label: prompt + context, flow: true }
+  - { from: store, to: gw, label: text only, style: dashed }
+notes:
+  - { target: capture, text: "Nothing leaves the machine by default: capture writes straight to the local store." }
+  - { target: store, text: "One SQLite file holds meetings, full-text search and vectors, so backups are a file copy." }
+  - { target: gw, text: "The cloud path is opt-in per request and sends text only, never raw audio." }
+legend:
+  - { style: solid, label: Always local }
+  - { style: dashed, label: Optional / cloud mode }
+steps:
+  - { title: Capture, show: [web, capture, index] }
+  - { title: Answer locally, show: [index, store, llm] }
+  - { title: Opt in to the cloud, show: [store, gw] }
