@@ -20,7 +20,7 @@ Treat specs coming from an AI or a stranger as **untrusted input**.
 - Files you put in `icons-inbox/` and custom icon packs.
 - The interactive SVG embeds a small script. Serve diagrams from your own origin or inline them from a build you control; if you need
   a script-free file use `--static` / `static: true`.
-- Dependencies: run `npm audit`; some advisories only affect the private `site-demo` workspace, and `zod` 3.x has an advisory about
-  oversized collections whose fix requires zod 4 (the MCP SDK pins 3.x). Do not feed the tools unbounded input.
+- Dependencies: Dependabot alerts and security updates are on; `npm audit` is clean at release time. Major upgrades are done by hand (Dependabot
+  does not open version-update PRs for majors), so check `npm audit` after changing the toolchain.
 
 Report vulnerabilities as described in [SECURITY.md](../SECURITY.md).

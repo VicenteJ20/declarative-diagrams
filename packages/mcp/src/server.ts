@@ -299,7 +299,7 @@ export function createServer(opts: ServerOptions): McpServer {
         neutral: hex.optional(),
         extends: z.string().optional().describe("Base theme to inherit from (default distill)."),
         description: z.string().optional(),
-        overrides: z.record(z.unknown()).optional().describe("Optional explicit token overrides, e.g. { light: { 'panel-a': '#eceed9' }, dark: { accent: '#a9bb62' } }."),
+        overrides: z.record(z.string(), z.unknown()).optional().describe("Optional explicit token overrides, e.g. { light: { 'panel-a': '#eceed9' }, dark: { accent: '#a9bb62' } }."),
         save: z.boolean().optional(),
         overwrite: z.boolean().optional().describe("With save: replace an existing themes/<name>.theme.yaml."),
       },
