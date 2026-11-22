@@ -14,35 +14,45 @@ nodes:
     kind: cloud
     icon: aws-cloud
     children:
-      # ── frontend ───────────────────────────────────────────────
-      - { id: cdn, label: CloudFront, icon: aws-cloudfront }
-      - { id: web, label: S3, sublabel: Static website, icon: aws-s3 }
-      - { id: r53, label: Route 53, icon: aws-route53, stackWith: cdn }
-      - { id: waf, label: AWS WAF, icon: aws-waf, stackWith: r53 }
-      # ── backend ────────────────────────────────────────────────
-      - { id: apigw, label: API Gateway, icon: aws-api-gateway }
-      - { id: cognito, label: Cognito, icon: aws-cognito }
-      - { id: edge, label: Lambda@Edge, icon: aws-lambda, stackWith: cognito }
-      - { id: orch, label: Lambda, sublabel: Orchestrator, icon: aws-lambda }
-      - { id: sessions, label: DynamoDB, sublabel: User sessions, icon: aws-dynamodb }
-      - { id: rag, label: Lambda, sublabel: RAG, icon: aws-lambda }
-      - { id: ssm, label: SSM Parameter Store, sublabel: API token, icon: aws-res-systems-manager-parameter-store }
-      - { id: aurora, label: Aurora, sublabel: Embeddings, icon: aws-aurora }
-      - { id: llm, label: Amazon Bedrock, sublabel: AgentCore, icon: aws-bedrock }
-      # ── data pipeline ──────────────────────────────────────────
-      - { id: sched1, label: EventBridge Scheduler, icon: aws-res-eventbridge-scheduler }
-      - { id: pipeline, label: ECS, sublabel: Data pipeline, icon: aws-elastic-container-service }
-      - { id: kb, label: S3, sublabel: Knowledge base, icon: aws-s3 }
-      - { id: sched2, label: EventBridge Scheduler, icon: aws-res-eventbridge-scheduler }
-      - id: sfn
-        label: AWS Step Functions workflow
+      # three groups by responsibility (how AWS documentation organises such diagrams)
+      - id: g-web
+        label: Web delivery
         kind: group
-        icon: aws-step-functions
-        color: "#E7157B"
-        border: solid
         children:
-          - { id: batch, label: SageMaker, sublabel: BatchTransform, icon: aws-sagemaker }
-          - { id: langchain, label: ECS, sublabel: Langchain, icon: aws-elastic-container-service }
+          - { id: cdn, label: CloudFront, icon: aws-cloudfront }
+          - { id: web, label: S3, sublabel: Static website, icon: aws-s3 }
+          - { id: r53, label: Route 53, icon: aws-route53 }
+          - { id: waf, label: AWS WAF, icon: aws-waf }
+      - id: g-api
+        label: Chat backend
+        kind: group
+        children:
+          - { id: apigw, label: API Gateway, icon: aws-api-gateway }
+          - { id: cognito, label: Cognito, icon: aws-cognito }
+          - { id: edge, label: Lambda@Edge, icon: aws-lambda, stackWith: cognito }
+          - { id: orch, label: Lambda, sublabel: Orchestrator, icon: aws-lambda }
+          - { id: sessions, label: DynamoDB, sublabel: User sessions, icon: aws-dynamodb }
+          - { id: rag, label: Lambda, sublabel: RAG, icon: aws-lambda }
+          - { id: ssm, label: SSM Parameter Store, sublabel: API token, icon: aws-res-systems-manager-parameter-store }
+          - { id: llm, label: Amazon Bedrock, sublabel: AgentCore, icon: aws-bedrock }
+          - { id: aurora, label: Aurora, sublabel: Embeddings, icon: aws-aurora }
+      - id: g-data
+        label: Knowledge base ingestion
+        kind: group
+        children:
+          - { id: sched1, label: EventBridge Scheduler, icon: aws-res-eventbridge-scheduler }
+          - { id: pipeline, label: ECS, sublabel: Data pipeline, icon: aws-elastic-container-service }
+          - { id: kb, label: S3, sublabel: Knowledge base, icon: aws-s3 }
+          - { id: sched2, label: EventBridge Scheduler, icon: aws-res-eventbridge-scheduler }
+          - id: sfn
+            label: AWS Step Functions workflow
+            kind: group
+            icon: aws-step-functions
+            color: "#E7157B"
+            border: solid
+            children:
+              - { id: batch, label: SageMaker, sublabel: BatchTransform, icon: aws-sagemaker }
+              - { id: langchain, label: ECS, sublabel: Langchain, icon: aws-elastic-container-service }
 edges:
   # 3 · web delivery
   - { from: sales, to: cdn, flow: true }

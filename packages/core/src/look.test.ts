@@ -185,3 +185,19 @@ describe("compact layout (vendor looks)", () => {
     expect(checkConnections(l, { labels: true })).toEqual([]);
   });
 });
+
+describe("vendor look: stacked members get their own ports", () => {
+  it("two arrows into one stack member end on different points", async () => {
+    const icon = (id: string, extra: object = {}) => ({ id, label: id.toUpperCase(), icon: "lu-server", ...extra });
+    const spec = validateSpec({
+      look: "official",
+      nodes: [icon("a"), icon("b"), icon("hub"), icon("side", { stackWith: "hub" })],
+      edges: [{ from: "a", to: "side" }, { from: "b", to: "side" }, { from: "hub", to: "side" }],
+    }).spec!;
+    const l = await layoutSpec(spec);
+    const ends = l.edges.filter((e) => e.to === "side" && e.from !== "hub").map((e) => `${Math.round(e.points[e.points.length - 1].x)},${Math.round(e.points[e.points.length - 1].y)}`);
+    expect(ends).toHaveLength(2);
+    expect(new Set(ends).size).toBe(2);
+    expect(checkConnections(l, { labels: true })).toEqual([]);
+  });
+});
