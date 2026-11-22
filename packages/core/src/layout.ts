@@ -144,15 +144,23 @@ function retarget(points: Pt[], atStart: boolean, comp: Rect, m: Rect, flowRight
 
 /** Layout, then (when `zoneWidth: equal`) once more with every container of the same depth as wide as the widest one: tidy bands. */
 async function layoutCore(spec: DiagramSpec, mins: Map<number, number> = new Map()): Promise<Layout> {
-  const first = await layoutOnce(spec, mins);
+  let first = await layoutOnce(spec, mins);
+  if (spec.look === "official") {
+    // second pass: now that the neighbours' positions are known, give each connector the port that avoids crossings
+    const centre = new Map<string, number>();
+    for (const n of first.nodes) centre.set(n.id, spec.direction === "RIGHT" ? n.y + n.h / 2 : n.x + n.w / 2);
+    first = await layoutOnce(spec, mins, centre);
+  }
   if (spec.zoneWidth !== "equal") return first;
   const widest = new Map(mins);
   for (const n of first.nodes) if (n.container) widest.set(n.depth, Math.max(widest.get(n.depth) ?? 0, n.w));
-  return layoutOnce(spec, widest);
+  return layoutOnce(spec, widest, first.nodes.length ? new Map(first.nodes.map((n) => [n.id, spec.direction === "RIGHT" ? n.y + n.h / 2 : n.x + n.w / 2])) : undefined);
 }
 
-async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>): Promise<Layout> {
+/** `hint`: cross-axis centre of every node from a previous pass (vendor look: orders the connector ports). */
+async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: Map<string, number>): Promise<Layout> {
   const ico = stackIconSize(spec.look);
+  const official = spec.look === "official";
   const leafBox = (n: NodeSpec) => leafBoxI(n, ico);
   const lineY = (n: NodeSpec, h: number) => lineYI(n, h, ico);
   const ids = edgeIds(spec);
@@ -232,9 +240,21 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>): Promise
       ported.add(n.id);
       const cy = lineY(n, box.height);
       const mk = (suffix: string, x: number, y: number, side: string) => ({ id: `${n.id}|${suffix}`, x, y, width: 0, height: 0, layoutOptions: { "elk.port.side": side } });
+      // vendor look: one port per incident edge, spread over the icon, so several arrows never share (and overlap on) one point
+      const many = (suffix: string, count: number, at: (off: number) => { x: number; y: number }, side: string) => {
+        const k = Math.max(1, count);
+        const step = k > 1 ? Math.min(12, (ico - 12) / (k - 1)) : 0;
+        return Array.from({ length: k }, (_, j) => {
+          const p = at((j - (k - 1) / 2) * step);
+          return mk(official ? `${suffix}|${j}` : suffix, p.x, p.y, side);
+        });
+      };
+      const outN = spec.edges.filter((e) => e.from === n.id).length;
+      const inN = spec.edges.filter((e) => e.to === n.id).length;
+      const one = (c: number) => (official ? c : 1);
       const ports = flowRight
-        ? [mk("W", 0, cy, "WEST"), mk("E", box.width, cy, "EAST")]
-        : [mk("N", box.width / 2, 0, "NORTH"), mk("S", box.width / 2, box.height, "SOUTH")];
+        ? [...many("W", one(inN), (o) => ({ x: 0, y: cy + o }), "WEST"), ...many("E", one(outN), (o) => ({ x: box.width, y: cy + o }), "EAST")]
+        : [...many("N", one(inN), (o) => ({ x: box.width / 2 + o, y: 0 }), "NORTH"), ...many("S", one(outN), (o) => ({ x: box.width / 2 + o, y: box.height }), "SOUTH")];
       return { id: n.id, ...box, ports, layoutOptions: { "elk.portConstraints": "FIXED_POS" } };
     }
     return { id: n.id, ...box };
@@ -244,11 +264,27 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>): Promise
   const stacked = hasStacked(spec.nodes); // icon + label nodes need longer arrows and more air between them
   const elkChildren = groupSiblings(spec.nodes).map((n) => toElk(n, 0));
   // Edge endpoint for ELK: the member's port inside a stack (leaving side for sources, entering side for targets), else the node.
-  const endpoint = (id: string, role: "src" | "tgt") => {
+  // port index of every (edge, role): connectors of one side ordered by where their other end is
+  const portIdx = new Map<string, number>();
+  if (official) {
+    const sides = new Map<string, { key: string; other: number }[]>();
+    spec.edges.forEach((e, i) => {
+      for (const role of ["src", "tgt"] as const) {
+        const id = role === "src" ? e.from : e.to;
+        const other = role === "src" ? e.to : e.from;
+        const k = `${id}|${role}`;
+        sides.set(k, [...(sides.get(k) ?? []), { key: `${i}|${role}`, other: hint?.get(other) ?? i }]);
+      }
+    });
+    for (const list of sides.values()) list.sort((a, b) => a.other - b.other).forEach((p, j) => portIdx.set(p.key, j));
+  }
+  const endpoint = (id: string, role: "src" | "tgt", ei: number) => {
     const suffix = flowRight ? (role === "src" ? "E" : "W") : role === "src" ? "S" : "N";
     const st = owner.get(id);
     if (st) return `${st}|${id}|${suffix}`;
-    return ported.has(id) ? `${id}|${suffix}` : id;
+    if (!ported.has(id)) return id;
+    if (!official) return `${id}|${suffix}`;
+    return `${id}|${suffix}|${portIdx.get(`${ei}|${role}`) ?? 0}`;
   };
   const internal = (e: { from: string; to: string }) => owner.has(e.from) && owner.get(e.from) === owner.get(e.to);
 
@@ -275,8 +311,8 @@ async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>): Promise
       .filter(({ e }) => !internal(e))
       .map(({ e, i }) => ({
         id: ids[i],
-        sources: [endpoint(e.from, "src")],
-        targets: [endpoint(e.to, "tgt")],
+        sources: [endpoint(e.from, "src", i)],
+        targets: [endpoint(e.to, "tgt", i)],
         labels: e.label ? [{ text: e.label, width: Math.ceil(textW(e.label, 10.5)) + 12, height: 16 }] : undefined,
       })),
   };

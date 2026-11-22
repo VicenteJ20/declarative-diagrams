@@ -38,3 +38,22 @@ describe("look: official", () => {
     expect(validateSpec({ ...bad, look: "official" }).ok).toBe(false);
   });
 });
+
+describe("look: official — one connector per port", () => {
+  it("several arrows into the same node end at different points on the icon", async () => {
+    const r = validateSpec({
+      look: "official",
+      nodes: [
+        { id: "a", label: "A", icon: "lu-user" },
+        { id: "b", label: "B", icon: "lu-user" },
+        { id: "c", label: "C", icon: "lu-user" },
+        { id: "d", label: "D", icon: "lu-database" },
+      ],
+      edges: [{ from: "a", to: "d" }, { from: "b", to: "d" }, { from: "c", to: "d" }],
+    });
+    const svg = await renderSvg(r.spec!, { static: true });
+    const ends = [...svg.matchAll(/<path class="line" d="[^"]*?([\d.]+) ([\d.]+)" marker-end/g)].map((m) => `${m[1]},${m[2]}`);
+    expect(ends).toHaveLength(3);
+    expect(new Set(ends).size).toBe(3);
+  });
+});

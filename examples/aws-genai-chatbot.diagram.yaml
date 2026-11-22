@@ -8,7 +8,6 @@ direction: RIGHT
 notesPosition: below
 nodes:
   - { id: sales, label: Sales representative, icon: lu-user }
-  - { id: llm, label: LLM Provider, icon: lu-monitor }
   - { id: corp, label: Corporate storage, icon: lu-files }
   - id: aws
     label: AWS Cloud
@@ -29,6 +28,7 @@ nodes:
       - { id: rag, label: Lambda, sublabel: RAG, icon: aws-lambda }
       - { id: ssm, label: SSM Parameter Store, sublabel: API token, icon: aws-res-systems-manager-parameter-store }
       - { id: aurora, label: Aurora, sublabel: Embeddings, icon: aws-aurora }
+      - { id: llm, label: Amazon Bedrock, sublabel: AgentCore, icon: aws-bedrock }
       # ── data pipeline ──────────────────────────────────────────
       - { id: sched1, label: EventBridge Scheduler, icon: aws-res-eventbridge-scheduler }
       - { id: pipeline, label: ECS, sublabel: Data pipeline, icon: aws-elastic-container-service }
@@ -76,7 +76,7 @@ notes:
   - { target: web, text: "Web frontend delivery and security. A static website is hosted on S3 behind a CloudFront distribution, with its DNS name registered in Route 53. AWS WAF inspects every request as an additional layer of security." }
   - { target: cognito, text: "User routing and authentication. API Gateway authenticates users and routes requests to a Lambda function. Authentication is handled by a Cognito user pool, with the help of a Lambda@Edge function." }
   - { target: sessions, text: "Orchestration and session log. The orchestrator Lambda is ultimately responsible for returning the response to the client. It first records the session in DynamoDB, then invokes the Retrieval-Augmented Generation (RAG) Lambda." }
-  - { target: ssm, text: "RAG query and LLM inference. The RAG Lambda reads the API token from SSM Parameter Store, retrieves the relevant embeddings from Aurora and sends them with the user's query to the LLM provider. The answer goes back to the orchestrator." }
+  - { target: ssm, text: "RAG query and agent inference. The RAG Lambda reads the API token from SSM Parameter Store, retrieves the relevant embeddings from Aurora and sends them with the user's query to Amazon Bedrock AgentCore, which runs the agent and the LLM. The answer goes back to the orchestrator." }
 legend:
   - { style: solid, label: Request / data path }
   - { style: dashed, label: "Trigger or control" }
