@@ -122,7 +122,8 @@ describe("MCP tools", () => {
     expect((await call("render_diagram", { spec: GOOD, save_to: "out/a.png" })).text).toMatch(/already exists/); // out/a.png from the test above
     expect((await call("render_diagram", { spec: GOOD, save_to: "out/a.png", overwrite: true })).isError).toBe(false);
     expect((await call("render_diagram", { spec: GOOD, save_to: join(tmpdir(), "dgm-abs-escape.png") })).isError).toBe(true);
-    expect((await call("render_diagram", { spec: GOOD, save_to: "..\\win-escape.png" })).isError).toBe(true);
+    // a backslash separates path segments only on Windows; on POSIX it is an ordinary file-name character (still inside the root)
+    expect((await call("render_diagram", { spec: GOOD, save_to: "..\\win-escape.png" })).isError).toBe(process.platform === "win32");
     // a file whose *name* starts with ".." is inside the root and must be accepted
     expect((await call("render_diagram", { spec: GOOD, save_to: "..lookalike.png" })).isError).toBe(false);
     // symlink / junction pointing outside the root
