@@ -59,18 +59,6 @@ function svgToPng(svg: string, scale = 2, background = "#ffffff"): Promise<Blob>
 const siteMode = (): "light" | "dark" =>
   document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
 
-function Seg<T extends string>({ value, options, onChange, disabled }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void; disabled?: boolean }) {
-  return (
-    <div className="seg" role="group">
-      {options.map((o) => (
-        <button key={o.v} type="button" className={o.v === value ? "on" : ""} disabled={disabled} onClick={() => onChange(o.v)}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export default function Playground() {
   const [core, setCore] = useState<Core | null>(null);
   const [engineError, setEngineError] = useState<string | null>(null);
@@ -151,11 +139,12 @@ export default function Playground() {
     let live = true;
     (async () => {
       const get = async (name: string) => {
-        const r = await fetch(`${BASE}/gallery/${name}.svg`);
-        return r.ok ? r.text() : null;
+        const r = await fetch(`${BASE}/gallery/${name}.svg`).catch(() => null);
+        return r?.ok ? r.text() : null;
       };
       const [svg, narrow] = await Promise.all([get(ex.id), ex.narrow ? get(`${ex.id}.narrow`) : Promise.resolve(null)]);
       if (live && svg) setGallery({ svg, narrow });
+      else if (live) setEngineError("could not load the pre-rendered diagram (are you offline?)");
     })();
     return () => {
       live = false;
@@ -239,46 +228,37 @@ export default function Playground() {
   const frame = useMemo(() => ({ maxWidth: phone ? 390 : undefined }), [phone]);
   const status = ex.prerendered ? null : errors.length ? "bad" : out?.checks.length ? "warn" : out ? "ok" : null;
 
+  const [menu, setMenu] = useState(false);
+
   return (
     <div className="pg" data-tab={tab} data-focus={focus ? "on" : undefined}>
       <header className="bar">
         <a className="brand" href={`${BASE}/`}>
-          <span className="mark" aria-hidden>◈</span> declarative-diagrams <span className="tag">playground</span>
+          <span className="mark" aria-hidden>◈</span> declarative-diagrams
         </a>
+        <label className="pick">
+          <span>Example</span>
+          <select value={id} onChange={(e) => pick(EXAMPLES.find((x) => x.id === e.target.value)!)}>
+            {GROUPS.map((g) => (
+              <optgroup key={g} label={g}>
+                {EXAMPLES.filter((x) => x.group === g).map((x) => (
+                  <option key={x.id} value={x.id}>{x.title}{x.prerendered ? " ★" : ""}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <span className="grow" />
         <nav>
-          <a href={`${BASE}/guide/`}>Embed guide</a>
+          <a href={`${BASE}/guide/`}>Embed</a>
           <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>
-          <a href={`${REPO}#readme`} target="_blank" rel="noreferrer">Docs</a>
-          <button type="button" className="ghost" onClick={toggleUi} aria-label="Toggle dark mode">{ui === "dark" ? "☀ Light" : "☾ Dark"}</button>
+          <button type="button" className="icon" onClick={toggleUi} aria-label="Toggle dark mode" title="Toggle dark mode">{ui === "dark" ? "☀" : "☾"}</button>
         </nav>
       </header>
 
-      <section className="intro">
-        <h1>Write a little YAML, get an interactive diagram.</h1>
-        <ol>
-          <li><b>Pick</b> an example (architecture, flow, data model, AWS or Azure).</li>
-          <li><b>Edit</b> the YAML, or just change the theme, look and mode.</li>
-          <li><b>Click</b> a box to follow its connections, or use the ‹ › buttons to step through.</li>
-          <li><b>Export</b> SVG or PNG, or copy a link.</li>
-        </ol>
-      </section>
-
-      <section className="picker" aria-label="Examples">
-        <div className="groups">
-        {GROUPS.map((g) => (
-          <div className="group" key={g}>
-            <span className="glabel">{g}</span>
-            {EXAMPLES.filter((e) => e.group === g).map((e) => (
-              <button key={e.id} type="button" className={`chip ${e.id === id ? "on" : ""}`} onClick={() => pick(e)} title={e.blurb}>
-                {e.title}
-                {e.prerendered && <i title="Pre-rendered with the official icons">★</i>}
-              </button>
-            ))}
-          </div>
-        ))}
-        </div>
-        <p className="blurb">{ex.blurb}</p>
-      </section>
+      <p className="lead">
+        <b>Write a little YAML, get an interactive diagram.</b> <span>{ex.blurb}</span>
+      </p>
 
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "edit"} onClick={() => setTab("edit")}>YAML</button>
@@ -288,13 +268,11 @@ export default function Playground() {
       <main className="cols">
         <section className="editor" aria-label="YAML editor">
           <div className="paneBar">
-            <b>{ex.id}.diagram.yaml</b>
+            <span className="fname">{ex.id}.diagram.yaml</span>
             {ex.prerendered ? <span className="pill">read-only</span> : modified ? <span className="pill warn">edited</span> : null}
             <span className="grow" />
-            {!ex.prerendered && modified && (
-              <button type="button" className="ghost" onClick={() => setYaml(ex.yaml)}>Reset</button>
-            )}
-            <button type="button" className="ghost" onClick={() => copy(yaml, "YAML")}>Copy</button>
+            {!ex.prerendered && modified && <button type="button" className="link" onClick={() => setYaml(ex.yaml)}>Reset</button>}
+            <button type="button" className="link" onClick={() => copy(yaml, "YAML")}>Copy</button>
           </div>
           <textarea
             value={ex.prerendered ? ex.yaml : yaml}
@@ -307,30 +285,25 @@ export default function Playground() {
           />
           {ex.prerendered && (
             <p className="note">
-              <b>Why read-only?</b> This diagram uses the official {ex.group} icons. Those packs are not bundled (their licences do not allow redistribution), so it was
-              rendered once on a machine that has them. To edit it, <a href={`${REPO}#icons`} target="_blank" rel="noreferrer">clone the repo</a>, import the packs with{" "}
-              <code>dgm icons update</code>, and run <code>dgm render</code>.
+              Uses the official {ex.group} icons, which cannot be bundled (licences), so this one is pre-rendered and read-only.{" "}
+              <a href={`${REPO}#icons`} target="_blank" rel="noreferrer">Run it locally</a> to edit.
             </p>
           )}
           {!ex.prerendered && errors.length > 0 && (
-            <ul className="issues bad" role="alert">
-              {errors.map((e, i) => (<li key={i}>{e}</li>))}
-            </ul>
+            <ul className="issues bad" role="alert">{errors.map((e, i) => (<li key={i}>{e}</li>))}</ul>
           )}
           {!ex.prerendered && out && out.warnings.length > 0 && errors.length === 0 && (
-            <ul className="issues warn">
-              {out.warnings.map((e, i) => (<li key={i}>{e}</li>))}
-            </ul>
+            <ul className="issues warn">{out.warnings.map((e, i) => (<li key={i}>{e}</li>))}</ul>
           )}
           <details className="cheat">
             <summary>YAML cheat sheet</summary>
             <dl>
-              <dt><code>nodes</code></dt><dd>Boxes. A node with <code>children</code> becomes a zone/container. <code>icon: lu-database</code> (<a href="https://lucide.dev/icons" target="_blank" rel="noreferrer">Lucide names</a>), <code>sublabel</code>, <code>kind</code>, <code>tone</code>.</dd>
-              <dt><code>edges</code></dt><dd><code>{"{ from: a, to: b, label: HTTPS, flow: true }"}</code> — <code>flow</code> animates, <code>style: dashed</code> marks optional.</dd>
-              <dt><code>notes</code> / <code>steps</code></dt><dd>Numbered margin notes, and click-through scenarios (<code>show: [ids]</code>).</dd>
-              <dt><code>direction</code></dt><dd><code>RIGHT</code> (default) or <code>DOWN</code>. <code>stackWith: id</code> folds a branch under another node; <code>placement: left | right | below</code> pins a top-level node.</dd>
-              <dt><code>look</code></dt><dd><code>default</code> (soft panels), <code>official</code> (AWS style) or <code>azure</code>; try the Look switch.</dd>
-              <dt><code>variants.narrow</code></dt><dd>A phone version: <code>hide: [ids]</code> and per-node patches. Use the Phone switch to preview it.</dd>
+              <dt><code>nodes</code></dt><dd>Boxes; <code>children</code> makes a zone. <code>icon: lu-database</code> (<a href="https://lucide.dev/icons" target="_blank" rel="noreferrer">names</a>), <code>sublabel</code>, <code>kind</code>, <code>tone</code>.</dd>
+              <dt><code>edges</code></dt><dd><code>{"{ from: a, to: b, label: HTTPS, flow: true }"}</code>; <code>style: dashed</code> for optional.</dd>
+              <dt><code>notes</code>, <code>steps</code></dt><dd>Numbered notes; click-through scenarios (<code>show: [ids]</code>).</dd>
+              <dt><code>direction</code></dt><dd><code>RIGHT</code> or <code>DOWN</code>. <code>stackWith</code> folds a branch; <code>placement: left | right | below</code> pins a node.</dd>
+              <dt><code>look</code></dt><dd><code>default</code>, <code>official</code> (AWS) or <code>azure</code>.</dd>
+              <dt><code>variants.narrow</code></dt><dd>The phone version: <code>hide: [ids]</code> plus per-node patches.</dd>
             </dl>
           </details>
         </section>
@@ -339,25 +312,42 @@ export default function Playground() {
           <div className="controls">
             <label>Theme
               <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-                <option value="">(as written)</option>
+                <option value="">as written</option>
                 {THEMES.map((t) => (<option key={t} value={t}>{t}</option>))}
               </select>
             </label>
-            <div className="ctl"><span>Mode</span>
-              <Seg<Mode> value={mode} onChange={setMode} options={[{ v: "auto", label: "Auto" }, { v: "light", label: "Light" }, { v: "dark", label: "Dark" }]} />
-            </div>
-            <div className="ctl"><span>Font</span>
-              <Seg<FontMode | "yaml"> value={font} onChange={setFont} options={[{ v: "yaml", label: "As is" }, { v: "sans", label: "Sans" }, { v: "serif", label: "Serif" }]} />
-            </div>
-            <div className="ctl" title={ex.prerendered ? "Fixed: this example was rendered with its own look" : "Changes the drawing style and redraws"}><span>Look</span>
-              <Seg<LookChoice> value={look} disabled={!!ex.prerendered} onChange={setLook} options={[{ v: "yaml", label: "As written" }, { v: "default", label: "Soft" }, { v: "official", label: "AWS" }, { v: "azure", label: "Azure" }]} />
-            </div>
-            <div className="ctl layout"><span>Layout</span>
-              <Seg<"split" | "focus"> value={focus ? "focus" : "split"} onChange={(v) => setFocus(v === "focus")} options={[{ v: "split", label: "Editor + diagram" }, { v: "focus", label: "Diagram only" }]} />
-            </div>
-            <div className="ctl" title={hasNarrow ? "Preview the phone version" : "This diagram defines no variants.narrow"}><span>Phone</span>
-              <Seg<"off" | "on"> value={phone ? "on" : "off"} disabled={!hasNarrow} onChange={(v) => setPhone(v === "on")} options={[{ v: "off", label: "Wide" }, { v: "on", label: "390px" }]} />
-            </div>
+            <label title={ex.prerendered ? "Fixed: this example was rendered with its own look" : "Changes the drawing style and redraws"}>Look
+              <select value={look} disabled={!!ex.prerendered} onChange={(e) => setLook(e.target.value as LookChoice)}>
+                <option value="yaml">as written</option>
+                <option value="default">soft</option>
+                <option value="official">AWS</option>
+                <option value="azure">Azure</option>
+              </select>
+            </label>
+            <label>Mode
+              <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
+                <option value="auto">auto</option>
+                <option value="light">light</option>
+                <option value="dark">dark</option>
+              </select>
+            </label>
+            <button type="button" className={`toggle ${phone ? "on" : ""}`} disabled={!hasNarrow} onClick={() => setPhone(!phone)} title={hasNarrow ? "Preview the phone version" : "This diagram defines no variants.narrow"}>
+              Phone
+            </button>
+            <span className="grow" />
+            <details className="more">
+              <summary>More</summary>
+              <div className="pop">
+                <label>Font
+                  <select value={font} onChange={(e) => setFont(e.target.value as FontMode | "yaml")}>
+                    <option value="yaml">as written</option>
+                    <option value="sans">sans</option>
+                    <option value="serif">serif</option>
+                  </select>
+                </label>
+                <button type="button" className="toggle" onClick={() => setFocus(!focus)}>{focus ? "Show editor" : "Diagram only"}</button>
+              </div>
+            </details>
           </div>
 
           <div className={`stage ${phone ? "phone" : ""}`} style={frame}>
@@ -381,30 +371,33 @@ export default function Playground() {
           <div className="foot">
             {status && (
               <span className={`status ${status}`}>
-                {status === "bad" ? `✗ ${errors.length} problem${errors.length > 1 ? "s" : ""} in the YAML` : status === "warn" ? `! ${out!.checks.length} connector warning${out!.checks.length > 1 ? "s" : ""}` : "✓ valid"}
-                {out && status !== "bad" && ` · ${out.nodes} nodes · ${out.edges} edges${out.steps ? ` · ${out.steps} steps` : ""}`}
+                {status === "bad" ? `✗ ${errors.length} problem${errors.length > 1 ? "s" : ""}` : status === "warn" ? `! ${out!.checks.length} connector warning${out!.checks.length > 1 ? "s" : ""}` : "✓ valid"}
+                {out && status !== "bad" && ` · ${out.nodes} nodes · ${out.edges} edges`}
               </span>
             )}
             <span className="grow" />
-            {!ex.prerendered && <button type="button" onClick={share}>Copy link</button>}
-            <button type="button" onClick={() => exportAs("svg")}>SVG</button>
-            {!ex.prerendered && <button type="button" onClick={() => exportAs("interactive")} title="An SVG that keeps hover, click and steps">Interactive SVG</button>}
-            <button type="button" onClick={() => exportAs("png")}>PNG</button>
+            <div className="menu">
+              <button type="button" className="primary" onClick={() => setMenu(!menu)} aria-expanded={menu}>Export ▾</button>
+              {menu && (
+                <div className="pop up" onMouseLeave={() => setMenu(false)}>
+                  <button type="button" onClick={() => { setMenu(false); exportAs("png"); }}>PNG image</button>
+                  <button type="button" onClick={() => { setMenu(false); exportAs("svg"); }}>SVG (static)</button>
+                  {!ex.prerendered && <button type="button" onClick={() => { setMenu(false); exportAs("interactive"); }}>SVG (interactive)</button>}
+                  {!ex.prerendered && <button type="button" onClick={() => { setMenu(false); share(); }}>Copy share link</button>}
+                </div>
+              )}
+            </div>
           </div>
           {!ex.prerendered && out && out.checks.length > 0 && (
-            <ul className="issues warn" aria-label="Connection check">
-              {out.checks.map((c, i) => (<li key={i}>{c}</li>))}
-            </ul>
+            <ul className="issues warn" aria-label="Connection check">{out.checks.map((c, i) => (<li key={i}>{c}</li>))}</ul>
           )}
         </section>
       </main>
 
       <footer className="end">
-        <p>
-          Everything runs in your browser — the YAML never leaves the page. Open source (MIT):{" "}
-          <a href={REPO} target="_blank" rel="noreferrer">github.com/VicenteJ20/declarative-diagrams</a>. ★ marks examples that use the official AWS / Azure icons
-          (pre-rendered; not affiliated with Microsoft or Amazon — see the <a href={`${REPO}/blob/main/ICONS-DISCLAIMER.md`} target="_blank" rel="noreferrer">disclaimer</a>).
-        </p>
+        Runs entirely in your browser. MIT ·{" "}
+        <a href={REPO} target="_blank" rel="noreferrer">source</a> ·{" "}
+        <a href={`${REPO}/blob/main/ICONS-DISCLAIMER.md`} target="_blank" rel="noreferrer">★ = pre-rendered with official AWS / Azure icons (not affiliated)</a>
       </footer>
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
