@@ -57,3 +57,67 @@ describe("look: official — one connector per port", () => {
     expect(new Set(ends).size).toBe(3);
   });
 });
+
+import { checkConnections } from "./diagnostics.js";
+import { layoutSpec } from "./layout.js";
+
+describe("house style warnings", () => {
+  it("asks for look: official on AWS diagrams and look: azure on Azure diagrams", () => {
+    const aws = validateSpec({ nodes: [{ id: "a", label: "A", icon: "aws-lambda" }] }, { missingIcons: "warn" });
+    expect(aws.warnings.join()).toMatch(/look: official/);
+    const az = validateSpec({ nodes: [{ id: "a", label: "A", kind: "azure.subscription", children: [{ id: "b", label: "B" }] }] });
+    expect(az.warnings.join()).toMatch(/look: azure/);
+    const ok = validateSpec({ look: "official", nodes: [{ id: "a", label: "A", icon: "aws-lambda" }] }, { missingIcons: "warn" });
+    expect(ok.warnings.join()).not.toMatch(/look: official/);
+  });
+});
+
+describe("azure look", () => {
+  const spec = {
+    look: "azure",
+    nodes: [
+      { id: "u", label: "User", icon: "lu-user" },
+      {
+        id: "sub", label: "Subscription", kind: "azure.subscription",
+        children: [{ id: "vnet", label: "Virtual network", kind: "azure.vnet", children: [{ id: "sn", label: "Subnet", kind: "azure.subnet", children: [{ id: "a", label: "App", icon: "lu-server", badge: 2 }] }] }],
+      },
+    ],
+    edges: [{ from: "u", to: "a" }],
+  };
+  it("draws grey filled subnets, dotted vnets and green round badges", async () => {
+    const r = validateSpec(spec);
+    expect(r.ok).toBe(true);
+    const svg = await renderSvg(r.spec!, { static: true });
+    expect(svg).toContain("look-azure");
+    expect(svg).toContain("stroke-dasharray:2 3"); // dotted vnet
+    expect(svg).toContain("fill:#767676;fill-opacity:.12;stroke:none"); // filled subnet
+    expect(svg).toMatch(/<circle r="11"\/><text y="3.8">2/); // round badge
+    expect(svg).not.toMatch(/rx="3"\/><text y="3.8">2/);
+  });
+});
+
+describe("connection check", () => {
+  const ok = (nodes: any[], edges: any[], look = "official") => validateSpec({ look, nodes, edges }, { missingIcons: "warn" }).spec!;
+  it("a fan-out/fan-in diagram has no connector through a node and no overlapping arrowheads", async () => {
+    const nodes = ["a", "b", "c", "d", "e", "f"].map((id) => ({ id, label: id.toUpperCase(), icon: "lu-server" }));
+    const spec = ok(nodes, [
+      { from: "a", to: "b" }, { from: "a", to: "c" }, { from: "a", to: "d" },
+      { from: "b", to: "e" }, { from: "c", to: "e" }, { from: "d", to: "e" }, { from: "e", to: "f" }, { from: "a", to: "f" },
+    ]);
+    expect(checkConnections(await layoutSpec(spec))).toEqual([]);
+  });
+  it("reports a connector that crosses a node and two arrowheads on one point", () => {
+    const n = (id: string, x: number, y: number, extra: object = {}) => ({ id, spec: { id, label: id }, x, y, w: 60, h: 60, depth: 0, container: false, ...extra });
+    const layout = {
+      width: 400, height: 200,
+      nodes: [n("a", 0, 0), n("b", 200, 0), n("mid", 100, 0)],
+      edges: [
+        { id: "a->b", from: "a", to: "b", points: [{ x: 60, y: 30 }, { x: 200, y: 30 }] },
+        { id: "x->b", from: "a", to: "b", points: [{ x: 60, y: 100 }, { x: 200, y: 30 }] },
+      ],
+    };
+    const issues = checkConnections(layout as any);
+    expect(issues.join("\n")).toMatch(/a->b runs through node "mid"/);
+    expect(issues.join("\n")).toMatch(/end on the same point/);
+  });
+});

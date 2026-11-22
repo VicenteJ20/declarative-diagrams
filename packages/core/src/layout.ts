@@ -1,7 +1,7 @@
 import ELK from "elkjs/lib/elk.bundled.js";
 import { DiagramSpec, NodeSpec, edgeIds } from "./spec.js";
 import { kindOf } from "./kinds.js";
-import { nodeIcon, stackIconSize, STACK_ICON as STACK_ICON_SMALL, STACK_PAD, HEAD_ICON } from "./icons/index.js";
+import { nodeIcon, stackIconSize, isVendorLook, STACK_ICON as STACK_ICON_SMALL, STACK_PAD, HEAD_ICON } from "./icons/index.js";
 
 export interface Pt {
   x: number;
@@ -145,7 +145,7 @@ function retarget(points: Pt[], atStart: boolean, comp: Rect, m: Rect, flowRight
 /** Layout, then (when `zoneWidth: equal`) once more with every container of the same depth as wide as the widest one: tidy bands. */
 async function layoutCore(spec: DiagramSpec, mins: Map<number, number> = new Map()): Promise<Layout> {
   let first = await layoutOnce(spec, mins);
-  if (spec.look === "official") {
+  if (isVendorLook(spec.look)) {
     // second pass: now that the neighbours' positions are known, give each connector the port that avoids crossings
     const centre = new Map<string, number>();
     for (const n of first.nodes) centre.set(n.id, spec.direction === "RIGHT" ? n.y + n.h / 2 : n.x + n.w / 2);
@@ -160,7 +160,7 @@ async function layoutCore(spec: DiagramSpec, mins: Map<number, number> = new Map
 /** `hint`: cross-axis centre of every node from a previous pass (vendor look: orders the connector ports). */
 async function layoutOnce(spec: DiagramSpec, mins: Map<number, number>, hint?: Map<string, number>): Promise<Layout> {
   const ico = stackIconSize(spec.look);
-  const official = spec.look === "official";
+  const official = isVendorLook(spec.look);
   const leafBox = (n: NodeSpec) => leafBoxI(n, ico);
   const lineY = (n: NodeSpec, h: number) => lineYI(n, h, ico);
   const ids = edgeIds(spec);

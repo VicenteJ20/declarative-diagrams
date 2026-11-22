@@ -143,7 +143,7 @@ describe("rendering with icons", () => {
     expect(r.errors[0]).toMatch(/did you mean az-webapp/);
     const w = validateSpec({ nodes: [{ id: "a", label: "A", icon: "az-nope-nope" }] }, { missingIcons: "warn" });
     expect(w.ok).toBe(true);
-    expect(w.warnings.length).toBe(1);
+    expect(w.warnings.some((x) => /node "a".icon/.test(x))).toBe(true);
   });
 
   it("official icons are stacked and keep their colours; Lucide sits in a badge", async () => {

@@ -40,6 +40,7 @@ There is **no Microsoft Entra ID icon** in the official service pack (only `az-e
 
 ```yaml
 type: architecture
+look: azure
 title: Three-tier web app on Azure
 nodes:
   - { id: users, label: Users, icon: lu-users }
@@ -83,6 +84,7 @@ steps:
 
 ```yaml
 type: architecture
+look: azure
 title: Hub-and-spoke network
 nodes:
   - { id: onprem, label: On-premises, kind: onprem }
@@ -125,6 +127,28 @@ notes:
 
 Show the **VNet**, the **private endpoint** as its own node inside the subnet, and the PaaS resource (outside or in its own
 container) with the edge labelled `Private Link`. Avoid drawing service endpoints and private endpoints in the same picture.
+
+## House style for Azure diagrams — always `look: azure`
+
+Azure diagrams use the Microsoft architecture-diagram look (see `examples/azure-rag-landing-zone.diagram.yaml`). Recipe:
+
+1. **Header.** `look: azure`, `title`, `direction: RIGHT`, `notesPosition: below`. Numbered steps are **green round badges** (one `note` per step, in reading order).
+2. **Boundaries** (kind gives the default; override with `color`/`border`):
+
+   | Boundary | Spec | Looks like |
+   |---|---|---|
+   | Tenant / subscription | `azure.tenant`, `azure.subscription` (+ `icon: az-subscription`) | thin grey outline |
+   | Resource group, management group | `azure.resource-group` (+ `az-resource-groups`), `azure.management-group` | thin grey dashed |
+   | Virtual network | `azure.vnet` + `icon: az-virtual-networks` | dotted blue outline |
+   | Subnet | `azure.subnet` | light-grey filled box, no outline |
+   | Logical group (e.g. an AI platform, "Monitoring") | `kind: group` | grey dashed |
+
+3. **Icons.** Official `az-*` (search, do not guess); label = the product name as Microsoft writes it, `sublabel` for SKU or role. Put a private
+   endpoint / Private Link as its own node inside the subnet. Users and clients: Lucide (`lu-user`, `lu-laptop`). No Microsoft logo in the diagram.
+4. **Connectors.** Black, solid for the request path, dashed for async / control / telemetry; short labels (protocol, "Private Link", "peering").
+   Cross-VNet traffic is one edge labelled `peering`. Never two edges between the same pair.
+5. **Check the connections** exactly as in the AWS guide: the render report must have no `connection check` lines; fix by reordering, `stackWith`,
+   or splitting the fan-out. Every arrow ends on an icon.
 
 ## Tips
 

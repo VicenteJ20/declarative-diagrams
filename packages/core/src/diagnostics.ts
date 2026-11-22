@@ -1,3 +1,5 @@
+import type { Layout, LNode, Pt } from "./layout.js";
+
 /** Size/proportion report for an exported diagram, with advice when it is badly proportioned for a page. */
 export interface CanvasAdvice {
   width: number;
@@ -51,4 +53,55 @@ export function pngSize(buf: Uint8Array): { width: number; height: number } {
 export function svgSize(svg: string): { width: number; height: number } | null {
   const m = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
   return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
+}
+
+/** Does the axis-aligned segment a→b pass through the rectangle (shrunk by `m`)? Connectors are orthogonal, so this is exact for them. */
+function segmentHitsRect(a: Pt, b: Pt, r: { x: number; y: number; w: number; h: number }, m: number): boolean {
+  const x0 = r.x + m;
+  const x1 = r.x + r.w - m;
+  const y0 = r.y + m;
+  const y1 = r.y + r.h - m;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const sx0 = Math.min(a.x, b.x);
+  const sx1 = Math.max(a.x, b.x);
+  const sy0 = Math.min(a.y, b.y);
+  const sy1 = Math.max(a.y, b.y);
+  return sx1 > x0 && sx0 < x1 && sy1 > y0 && sy0 < y1;
+}
+
+/**
+ * Connection check on a computed layout. Returns one line per problem (empty = clean):
+ *  - a connector runs *through* a node that is not one of its ends (or a container holding one of its ends),
+ *  - two connectors end on exactly the same point (their arrowheads would overlap).
+ * The renderer runs it on every render (`RenderOptions.report`); the CLI and the MCP server print the result so an author
+ * (human or AI) fixes the spec instead of shipping a misleading arrow.
+ */
+export function checkConnections(layout: Layout): string[] {
+  const issues: string[] = [];
+  const byId = new Map<string, LNode>(layout.nodes.map((n) => [n.id, n]));
+  const within = (id: string, anc: string): boolean => {
+    for (let cur = byId.get(id); cur; cur = cur.parent ? byId.get(cur.parent) : undefined) if (cur.id === anc) return true;
+    return false;
+  };
+  const leaves = layout.nodes.filter((n) => !n.container);
+  const ends = new Map<string, string[]>();
+  for (const e of layout.edges) {
+    const pts = e.points;
+    if (pts.length < 2) continue;
+    for (const n of leaves) {
+      if (within(n.id, e.from) || within(n.id, e.to) || n.id === e.from || n.id === e.to) continue;
+      for (let i = 1; i < pts.length; i++) {
+        if (segmentHitsRect(pts[i - 1], pts[i], n, 3)) {
+          issues.push(`connector ${e.id} runs through node "${n.id}" — route it elsewhere (reorder nodes, \`stackWith\`, or connect through the node it should pass).`);
+          break;
+        }
+      }
+    }
+    const last = pts[pts.length - 1];
+    const key = `${Math.round(last.x)},${Math.round(last.y)}`;
+    ends.set(key, [...(ends.get(key) ?? []), e.id]);
+  }
+  for (const ids of ends.values())
+    if (ids.length > 1) issues.push(`connectors ${ids.join(", ")} end on the same point — their arrowheads overlap.`);
+  return issues;
 }

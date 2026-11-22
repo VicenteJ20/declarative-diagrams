@@ -12,7 +12,8 @@ export type { IconData } from "./sanitize.js";
 export const STACK_ICON = 32; // tile diameter / official icon size
 /** Icon size of stacked nodes in the `official` look (cloud-vendor style: big flat icons). */
 export const STACK_ICON_OFFICIAL = 48;
-export const stackIconSize = (look?: string) => (look === "official" ? STACK_ICON_OFFICIAL : STACK_ICON);
+export const isVendorLook = (look?: string) => look === "official" || look === "azure";
+export const stackIconSize = (look?: string) => (isVendorLook(look) ? STACK_ICON_OFFICIAL : STACK_ICON);
 export const STACK_GLYPH = 20; // mono glyph inside the tile (≈ 1.6× the 12.5px label — never the dominant element)
 export const STACK_PAD = 10;
 export const CARD_ICON = 22;

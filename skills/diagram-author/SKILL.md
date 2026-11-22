@@ -40,6 +40,13 @@ with `<Diagram />`.
 8. **Save and export.** `write_diagram` to `src/diagrams/<name>.diagram.yaml`; export with `render_diagram save_to=…`
    (`.svg` interactive, `.png` static; pass `overwrite=true` when re-exporting an existing file). Give the user the MDX snippet (below).
 
+## House style: vendor looks (mandatory)
+
+- **AWS diagrams → `look: official`. Azure diagrams → `look: azure`.** Always, no exceptions; follow the recipe in `references/aws.md` / `references/azure.md`
+  (`get_authoring_guide topic=aws|azure`). Other diagrams keep the default look.
+- After every `render_diagram`, read the report: any `CONNECTION CHECK` line (connector through a node, overlapping arrowheads) means the diagram is not
+  done — fix the spec and render again. `validate_diagram` also warns when an AWS/Azure diagram has no `look`.
+
 ## Spec essentials
 
 ```yaml

@@ -30,7 +30,7 @@ export interface NodeSpec {
   /** Containers, `look: official`: border colour (#hex) — e.g. VPC green, ECS orange, Step Functions pink. */
   color?: string;
   /** Containers, `look: official`: `solid` (default), `dashed` for logical groups (clusters, auto scaling groups) or `tinted` (solid + light fill, e.g. subnets). */
-  border?: "solid" | "dashed" | "tinted";
+  border?: "solid" | "dashed" | "dotted" | "tinted" | "filled";
   sublabel?: string;
   /** Shown in a tooltip on hover. */
   description?: string;
@@ -52,7 +52,7 @@ const NodeSchema: z.ZodType<NodeSpec> = z.lazy(() =>
       variant: z.enum(["card", "stacked"]).optional(),
       placement: z.literal("below").optional(),
       color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "must be a #hex colour").optional(),
-      border: z.enum(["solid", "dashed", "tinted"]).optional(),
+      border: z.enum(["solid", "dashed", "dotted", "tinted", "filled"]).optional(),
       sublabel: z.string().optional(),
       description: z.string().optional(),
       fields: z
@@ -115,7 +115,7 @@ export const SpecSchema = z
     description: z.string().optional(),
     direction: z.enum(["RIGHT", "DOWN"]).default("RIGHT"),
     /** `default` (Distill: tinted panels, card nodes) or `official` (vendor-style: flat icons, outlined groups, square numbered badges, black connectors). Overridable at render time. */
-    look: z.enum(["default", "official"]).optional(),
+    look: z.enum(["default", "official", "azure"]).optional(),
     /** Theme name (`olive`, `azure`…) or an inline theme definition. Overridable at render time. */
     theme: z.union([z.string(), z.record(z.unknown())]).optional(),
     /** Typeface style: `mixed` (default, Distill), `sans` or `serif`. Overridable at render time. */
@@ -307,6 +307,21 @@ export function validateSpec(input: unknown, vopts: ValidateOptions = {}): Valid
     );
   }
 
+  // house style: cloud diagrams use their vendor look so every AWS / Azure diagram looks and connects the same way
+  const uses = { aws: false, azure: false };
+  const scan = (list: NodeSpec[]) => {
+    for (const n of list) {
+      if (n.icon?.startsWith("aws-") || n.kind?.startsWith("aws.")) uses.aws = true;
+      if (n.icon?.startsWith("az-") || n.kind?.startsWith("azure.")) uses.azure = true;
+      if (n.children) scan(n.children);
+    }
+  };
+  scan(spec.nodes);
+  if (!spec.look && uses.aws && !uses.azure)
+    warnings.push('AWS diagram without `look: official`: add it (flat icons, outlined groups, numbered badges, one connector per port). See the AWS style guide (`get_authoring_guide topic=aws`).');
+  if (!spec.look && uses.azure && !uses.aws)
+    warnings.push('Azure diagram without `look: azure`: add it (grey subnets, dotted virtual networks, green round badges). See the Azure style guide (`get_authoring_guide topic=azure`).');
+
   // stackWith: sibling leaf, no self/cycles
   const checkStacks = (nodes: NodeSpec[], where: string) => {
     const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -386,7 +401,7 @@ export function specJsonSchema(): unknown {
       stackWith: { type: "string", description: "id of a sibling leaf: same step, stacked across the flow (below it when direction RIGHT, beside it when DOWN)" },
       badge: { type: ["string", "number"], description: "sequence marker shown on the node, e.g. 1, 2, 3" },
       color: { type: "string", description: "containers, look: official — border colour as #hex" },
-      border: { enum: ["solid", "dashed", "tinted"], description: "containers, look: official — dashed for logical groups, tinted = solid + light fill" },
+      border: { enum: ["solid", "dashed", "dotted", "tinted", "filled"], description: "containers, vendor looks — dashed = logical group, dotted = virtual network (azure), tinted = outline + light fill, filled = grey/colour fill without outline (azure subnet)" },
       sublabel: { type: "string" },
       description: { type: "string" },
       fields: {
@@ -413,7 +428,7 @@ export function specJsonSchema(): unknown {
       subtitle: { type: "string", description: "line under the title" },
       description: { type: "string" },
       direction: { enum: ["RIGHT", "DOWN"] },
-      look: { enum: ["default", "official"], description: "official = vendor-style diagram: flat big icons, outlined groups (use container color/border), square numbered badges, black connectors" },
+      look: { enum: ["default", "official", "azure"], description: "official = AWS-style diagram (azure = Microsoft Azure style: grey subnets, dotted vnets, green round badges). Vendor-style: flat big icons, outlined groups (use container color/border), square numbered badges, black connectors" },
       notesPosition: { enum: ["side", "below"] },
       zoneWidth: { enum: ["auto", "equal"], description: "equal = containers of the same depth share one width (tidy bands; the phone variant uses it)" },
       legend: {

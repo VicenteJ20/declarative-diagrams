@@ -19,6 +19,7 @@ import {
   isMode,
   isFontMode,
   type FontMode,
+  type Look,
   parseThemeDef,
   applyVariant,
   canvasAdvice,
@@ -44,7 +45,7 @@ const HELP = `dgm — Distill-style interactive diagrams
 Usage:
   dgm render <spec> -o <out.svg|out.png> [--static] [--mode auto|light|dark] [--theme <name|file>] [--scale 2]
                     [--aspect 16/9|1.5] [--padding 16] [--variant narrow]
-                    [--font mixed|sans|serif] [--look default|official]
+                    [--font mixed|sans|serif] [--look default|official|azure]
   dgm validate <spec>               Print errors/warnings (exit 1 on errors)
   dgm schema                        Print the JSON Schema of the spec
   dgm kinds                         List known node kinds
@@ -373,8 +374,8 @@ async function main() {
       if (mode && !isMode(mode)) throw new Error(`--mode must be auto|light|dark, got "${mode}"`);
       const font = flag(args, "--font") as FontMode | undefined;
       if (font && !isFontMode(font)) throw new Error(`--font must be mixed|sans|serif, got "${font}"`);
-      const look = flag(args, "--look") as "default" | "official" | undefined;
-      if (look && look !== "default" && look !== "official") throw new Error(`--look must be default|official, got "${look}"`);
+      const look = flag(args, "--look") as Look | undefined;
+      if (look && !["default", "official", "azure"].includes(look)) throw new Error(`--look must be default|official|azure, got "${look}"`);
       const aspect = parseAspect(flag(args, "--aspect"));
       const padding = flag(args, "--padding") ? Number(flag(args, "--padding")) : undefined;
       let target = spec;
@@ -383,23 +384,25 @@ async function main() {
         if (!v) throw new Error(`spec has no variants.${flag(args, "--variant")}`);
         target = v;
       }
+      const report: { connections?: string[] } = {};
       let size: { width: number; height: number } | null = null;
       let pxScale = 1;
       mkdirSync(dirname(out), { recursive: true });
       if (extname(out).toLowerCase() === ".png") {
         const scale = Number(flag(args, "--scale") ?? 2);
-        const png = await renderPng(target, { theme, mode, scale, aspect, padding, font, look });
+        const png = await renderPng(target, { theme, mode, scale, aspect, padding, font, look, report });
         writeFileSync(out, png);
         size = pngSize(png);
         pxScale = scale;
       } else {
-        const svg = await renderSvg(target, { theme, mode, aspect, padding, font, look, static: args.includes("--static") });
+        const svg = await renderSvg(target, { theme, mode, aspect, padding, font, look, report, static: args.includes("--static") });
         writeFileSync(out, svg);
         size = svgSize(svg);
       }
       const adv = size ? canvasAdvice(size.width, size.height, flag(args, "--variant") ? pxScale : false) : null;
       console.log(`wrote ${out}${adv ? `  —  ${adv.text}` : ""}`);
       if (adv?.hint && !aspect) console.log(`note: ${adv.hint}`);
+      for (const c of report.connections ?? []) console.log(`connection check: ${c}`);
       break;
     }
     default:

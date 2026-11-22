@@ -188,10 +188,10 @@ import arch, { narrow } from "../diagrams/<name>.diagram.yaml";
 
 1. Intake (section 0) and inputs (section 1–2).
 2. `dgm_list_icon_packs`; look up the closest example/pattern (`dgm_get_example`, guide topic).
-3. Plan the structure in your head: containers, nodes, the 2–3 key flows, ≤ 5 notes. If the scope exceeds ~15 nodes, **propose a split** (overview + detail diagrams) and do the overview first.
+3. **Cloud diagrams use their house style: AWS → `look: official`, Azure → `look: azure`** (recipe: `dgm_get_authoring_guide` topic `aws` / `azure`, always read it before drawing). Plan the structure in your head: containers, nodes, the 2–3 key flows, ≤ 5 notes. If the scope exceeds ~15 nodes, **propose a split** (overview + detail diagrams) and do the overview first.
 4. `dgm_search_icons` for every resource; write the spec.
 5. `dgm_validate_diagram` → fix → repeat.
-6. `dgm_render_diagram` (PNG): read the size line and any `LAYOUT NOTE` first (section 4b), then **look at the image** if you can see tool images: overlapping labels, arrows that detour around containers, unreadable text, empty containers, too many colours. Iterate up to **4 times**, one change at a time (direction, nesting, fewer cross-container edges, shorter labels, split). If you cannot see the image, rely on validation and a structural check (nodes/edges/levels vs the request) and say you could not inspect the render.
+6. `dgm_render_diagram` (PNG): read the size line and any `LAYOUT NOTE` first (section 4b), then **look at the image** if you can see tool images: overlapping labels, arrows that detour around containers, unreadable text, empty containers, too many colours. The render report must be free of `CONNECTION CHECK` lines (connector through a node, overlapping arrowheads); a line there means fix and re-render. Iterate up to **4 times**, one change at a time (direction, nesting, fewer cross-container edges, shorter labels, split). If you cannot see the image, rely on validation and a structural check (nodes/edges/levels vs the request) and say you could not inspect the render.
 7. Save (`dgm_write_diagram`) and export what was asked.
 8. Answer with the **delivery summary**.
 

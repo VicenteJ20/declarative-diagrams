@@ -30,6 +30,7 @@ Resource-level icons (`aws-res-…`) exist for things like NAT and IGW: `search_
 
 ```yaml
 type: architecture
+look: official
 title: Containerised API on AWS
 nodes:
   - { id: users, label: Users, icon: lu-users }
@@ -72,6 +73,7 @@ notes:
 
 ```yaml
 type: architecture
+look: official
 title: Serverless API
 nodes:
   - { id: users, label: Users, icon: lu-users }
@@ -98,9 +100,38 @@ edges:
 Inside the VPC, one `aws.az` container per zone, each holding its subnets; put the load balancer **in the VPC but outside the AZ
 containers** (it spans them). Use a dashed edge with `label: replication` between the two database nodes.
 
-## Vendor-style (official) look
+## House style for AWS diagrams — always `look: official`
 
-For diagrams that should look like the ones in AWS documentation, set `look: official` (see `examples/aws-genai-chatbot.diagram.yaml`): the `kind: cloud` container with the `aws-cloud` icon becomes the dark **AWS Cloud** tab, groups are outlined (`aws.vpc` green, `aws.subnet` tinted, logical groups `border: dashed` + `color`), every icon is big and flat with the label below, steps are square blue numbers (`notes` + `notesPosition: below` give the numbered legend), and connectors are thin black lines. Prefer few edge labels in this look; use `subtitle` for the one-line purpose.
+Every AWS diagram uses the vendor look, so they all read like the diagrams in AWS documentation and connect the same way.
+Reference: `examples/aws-genai-chatbot.diagram.yaml`. Follow this recipe; do not improvise.
+
+1. **Header.** `look: official`, `title` (what it is) and `subtitle` (one sentence: the purpose). `direction: RIGHT`, `notesPosition: below`.
+2. **AWS Cloud.** One `kind: cloud`, `icon: aws-cloud` container ("AWS Cloud" with the dark logo tab) holds every AWS service. Actors and
+   on-premises things stay **outside** it, with Lucide icons (`lu-user`, `lu-monitor`, `lu-files`). Do not put an AWS service outside.
+3. **Groups** (outlined, no fill unless noted). Kind gives the default, `color`/`border` override it:
+
+   | Group | Spec |
+   |---|---|
+   | Region / AZ | `aws.region` (teal dashed) / `aws.az` (blue dashed) |
+   | VPC | `aws.vpc` + `icon: aws-vpc-group` (green) |
+   | Public / private subnet | `aws.subnet` + `icon: aws-public-subnet` `color: "#7AA116"`, `border: tinted` / `aws-private-subnet` (blue, tinted) |
+   | ECS cluster, Auto Scaling group | `kind: group`, `color: "#ED7100"`, `border: dashed`, icon `aws-ecs` / `aws-auto-scaling-group` |
+   | Step Functions workflow, other logical groups | `kind: group`, `color: "#E7157B"`, `border: solid` (workflow) or grey dashed |
+
+4. **Icons.** Official `aws-*` for services (find them with `search_icons`, never guess; if a new service has no icon in the imported pack,
+   use the closest parent service icon and say so). Label = service name, `sublabel` = its role ("Orchestrator", "Embeddings").
+   Auxiliary services that annotate a flow (EventBridge Scheduler, WAF, Route 53, Lambda@Edge) are their own node next to the node they act on,
+   joined with a **dashed** edge (`stackWith` the main node keeps them beside it).
+5. **Connectors.** Thin black lines; arrow = direction of the request. Few or no labels (protocol only when it matters).
+   `flow: true` on the one main path, `style: dashed` for triggers, schedules, security and control. Never draw two edges between the same pair.
+6. **Numbering.** Write one `note` per reading step, **in reading order**: they become the square blue numbers on the diagram and the numbered
+   legend below it (target = the node where the step happens). Do not also set `badge` on those nodes. Add `steps` that replay each note.
+7. **Check the connections** (the renderer does it for you; this is what you must do with the result):
+   - the render report must not contain any `connection check:` / `CONNECTION CHECK:` line. Each line names a connector that runs through a
+     node or two arrowheads on one point. Fix by reordering nodes, `stackWith`, splitting a fan-out, or removing a redundant edge;
+   - every arrow must end on an icon and have its own arrowhead; no connector may cross an icon; look at the PNG for lines that wander.
+8. **Repeatability.** Same inputs → same picture: do not hand-tune coordinates (there are none). Keep ids kebab-case, nodes in reading order,
+   and commit the `*.diagram.yaml` next to its exported `.png`/`.svg`.
 
 ## Tips
 

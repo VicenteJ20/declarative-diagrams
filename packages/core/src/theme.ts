@@ -12,7 +12,7 @@ export interface CssOptions {
   /** Typeface style; default `mixed`. */
   font?: FontMode;
   /** `official`: vendor-style diagram (flat icons, outlined groups, black connectors, square badges). */
-  look?: "default" | "official";
+  look?: "default" | "official" | "azure";
 }
 
 /** A value that can be interpolated into the embedded `<style>` without breaking out of it (no `<>{};&\`, comments, `url(`/`@import`). */
@@ -27,6 +27,18 @@ function safe(v: string, what: string): string {
 
 /** Blue of the numbered step badges in vendor reference diagrams. */
 const OFFICIAL_BADGE = "#3F6FBE";
+
+/** `look: azure` on top of `official`: Microsoft Azure reference style (black labels, thin outlines, green round badges). */
+function azure(v: (k: string) => string): string {
+  return `
+.dgm.look-azure .cont rect{stroke-width:1}
+.dgm.look-azure .cont .head{font-size:13.5px;fill:${v("text")}}
+.dgm.look-azure .node .head{font-size:13px}
+.dgm.look-azure .node .sub{font-size:11.5px}
+.dgm.look-azure .edge .line{stroke-width:1.6}
+.dgm.look-azure .mark circle{fill:#107C10;stroke:none}
+.dgm.look-azure .mark text{font-size:12px}`;
+}
 
 /** `look: official` overrides: flat icons without cards, outlined groups, thin black connectors, square badges. */
 function official(v: (k: string) => string): string {
@@ -144,7 +156,7 @@ ${toneRules}
 .dgm .legend text{font-size:11px;fill:${v("muted")}}
 .dgm .legend-rule{stroke:${v("panel-stroke")};stroke-width:1}
 .dgm .leader{fill:none;stroke:${v("muted")};stroke-width:.8;stroke-dasharray:1.5 2.5}
-${o.look === "official" ? official(v) : ""}
+${o.look === "official" || o.look === "azure" ? official(v) : ""}${o.look === "azure" ? azure(v) : ""}
 ${interactive}
 `;
 }

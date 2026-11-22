@@ -3,7 +3,7 @@ export { validateSpec, applyVariant, parseSpecText, specJsonSchema, edgeIds, Spe
 export type { DiagramSpec, NodeSpec, ValidationResult } from "./spec.js";
 export { layoutSpec } from "./layout.js";
 export { renderSvg, renderLayout, resolveRenderTheme } from "./render.js";
-export type { RenderOptions } from "./render.js";
+export type { RenderOptions, Look } from "./render.js";
 export { renderPng } from "./png.js";
 export { attach } from "./runtime.js";
 export { KINDS } from "./kinds.js";
@@ -14,5 +14,5 @@ export { parseThemeDef, ThemeDefSchema } from "./themes/schema.js";
 export { resolveIcon, parseIconRef, configureIcons, listIcons, listAliases, syncPack, importInbox, detectPack, syncedPacks, OFFICIAL_URL } from "./icons/index.js";
 export type { IconResult, CustomPack, OfficialPack } from "./icons/index.js";
 export type { ValidateOptions } from "./spec.js";
-export { canvasAdvice, pngSize, svgSize, WIDE_LIMIT, TALL_LIMIT } from "./diagnostics.js";
+export { canvasAdvice, checkConnections, pngSize, svgSize, WIDE_LIMIT, TALL_LIMIT } from "./diagnostics.js";
 export type { CanvasAdvice } from "./diagnostics.js";

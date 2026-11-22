@@ -441,7 +441,7 @@ export function createServer(opts: ServerOptions): McpServer {
         theme: z.string().optional(),
         mode: z.enum(["auto", "light", "dark"]).optional(),
         font: z.enum(["mixed", "sans", "serif"]).optional().describe("Typeface: mixed (default: sans labels + serif title/notes), sans or serif everywhere."),
-        look: z.enum(["default", "official"]).optional().describe("official = vendor-style (flat big icons, outlined groups with colour/border, square numbered badges, black connectors, title + subtitle rule), like AWS/Azure reference diagrams."),
+        look: z.enum(["default", "official", "azure"]).optional().describe("Vendor-style looks. official = AWS reference style (flat big icons, outlined groups with colour/border, square blue numbered badges, black connectors, title + subtitle rule); azure = Microsoft Azure style (grey filled subnets, dotted blue virtual networks, green round badges). ALWAYS use official for AWS diagrams and azure for Azure diagrams."),
         aspect: z.union([z.string(), z.number()]).optional().describe("Letterbox to a ratio such as 16/9 or 1.5."),
         padding: z.number().optional(),
         variant: z.enum(["narrow"]).optional().describe("Render the spec's author-defined variants.narrow layout."),
@@ -462,9 +462,10 @@ export function createServer(opts: ServerOptions): McpServer {
           if (!v) return fail("This spec has no `variants.narrow`. Add `variants: { narrow: {} }` to define one (optionally `hide: [ids]` and `nodes: { <id>: { label, sublabel, stackWith: null } }`).");
           spec = v;
         }
-        const ro = { theme: a.theme, mode: a.mode as Mode | undefined, font: a.font, look: a.look, aspect: parseAspect(a.aspect), padding: a.padding };
+        const report: { connections?: string[] } = {};
+        const ro = { theme: a.theme, mode: a.mode as Mode | undefined, font: a.font, look: a.look, aspect: parseAspect(a.aspect), padding: a.padding, report };
         const format = a.format ?? (a.save_to && extname(a.save_to).toLowerCase() === ".svg" ? "svg" : "png");
-        const warn = res.warnings.length ? `\nWarnings:\n- ${res.warnings.join("\n- ")}` : "";
+        const warnList = (): string => { const w = [...res.warnings, ...(report.connections ?? []).map((c) => `CONNECTION CHECK: ${c}`)]; return w.length ? `\nWarnings:\n- ${w.join("\n- ")}` : ""; };
         if (format === "png") {
           const png = await renderPng(spec, { ...ro, scale: a.scale });
           let saved = "";
@@ -476,7 +477,7 @@ export function createServer(opts: ServerOptions): McpServer {
           }
           const adv = canvasAdvice(pngSize(png).width, pngSize(png).height, a.variant ? (a.scale ?? 2) : false);
           const advText = `${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}`;
-          return { content: [{ type: "text", text: `Rendered PNG (${Math.round(png.length / 1024)} KB). ${advText}${saved}${warn}` }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] as Content[] };
+          return { content: [{ type: "text", text: `Rendered PNG (${Math.round(png.length / 1024)} KB). ${advText}${saved}${warnList()}` }, { type: "image", data: png.toString("base64"), mimeType: "image/png" }] as Content[] };
         }
         const svg = await renderSvg(spec, { ...ro, static: a.static });
         if (a.save_to) {
@@ -485,9 +486,9 @@ export function createServer(opts: ServerOptions): McpServer {
           writeFileSync(f, svg);
           const sz = svgSize(svg);
           const adv = sz ? canvasAdvice(sz.width, sz.height, !!a.variant) : null;
-          return text(`Rendered SVG (${Math.round(svg.length / 1024)} KB) → ${relative(root, f)}${a.static ? "" : " (interactive: embed inline, <object> or via <Diagram>; <img> loses the script)"}.${adv ? ` ${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}` : ""}${warn}`);
+          return text(`Rendered SVG (${Math.round(svg.length / 1024)} KB) → ${relative(root, f)}${a.static ? "" : " (interactive: embed inline, <object> or via <Diagram>; <img> loses the script)"}.${adv ? ` ${adv.text}.${adv.hint && !a.aspect ? `\nLAYOUT NOTE: ${adv.hint}` : ""}` : ""}${warnList()}`);
         }
-        return text(svg.length > 200_000 ? `SVG is ${Math.round(svg.length / 1024)} KB — pass save_to to write it to a file instead.` : svg + warn);
+        return text(svg.length > 200_000 ? `SVG is ${Math.round(svg.length / 1024)} KB — pass save_to to write it to a file instead.` : svg + warnList());
       } catch (e) {
         return fail((e as Error).message);
       }

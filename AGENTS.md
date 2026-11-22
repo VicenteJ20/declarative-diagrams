@@ -31,6 +31,7 @@ Rebuild (`npm run build`) after changing `packages/*/src` — the CLI, MCP serve
 - **Never commit official icons.** Azure/AWS zips go in `icons-inbox/<pack>/` (git-ignored); `dgm icons update` extracts them to
   `.dgm/icons/`. Don't download them for the user. Never alter the icons' shapes (see ICONS-DISCLAIMER.md);
   `docs/img/` holds rendered example diagrams only.
+- **House style:** AWS diagrams use `look: official`, Azure diagrams `look: azure` (recipes in `skills/diagram-author/references/aws.md` / `azure.md`). A render must report no `connection check` lines; `packages/core/src/look.test.ts` guards the geometry.
 - Diagram files are `*.diagram.yaml`; themes are `*.theme.yaml` (registered in `dgm.config.json`).
 - Writes by the MCP server are confined to the project root and never replace existing files without `overwrite=true`; don't work around that.
 - Theme/palette values and icon SVGs end up inside the exported SVG: keep them validated (`packages/core/src/theme.ts`, `icons/sanitize.ts`; tests in `security.test.ts`).

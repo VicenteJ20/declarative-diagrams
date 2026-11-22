@@ -2,7 +2,7 @@
 type: architecture
 title: Enterprise RAG assistant on Azure — hub-and-spoke landing zone
 description: Employees chat with an assistant grounded on corporate documents. Traffic enters through Front Door, is governed by API Management, and reaches Azure OpenAI and AI Search over private endpoints. Documents are ingested asynchronously. Fictional example.
-look: official
+look: azure
 direction: RIGHT
 notesPosition: below
 nodes:
@@ -36,9 +36,17 @@ nodes:
             kind: azure.vnet
             icon: az-virtual-networks
             children:
-              - { id: apim, label: API Management, sublabel: Validates the JWT, icon: az-api-management-services }
-              - { id: app, label: Chat backend, sublabel: App Service, icon: az-app-services }
-              - { id: pe, label: Private endpoints, icon: az-private-endpoints }
+              - id: snet-app
+                label: snet-app
+                kind: azure.subnet
+                children:
+                  - { id: apim, label: API Management, sublabel: Validates the JWT, icon: az-api-management-services }
+                  - { id: app, label: Chat backend, sublabel: App Service, icon: az-app-services }
+              - id: snet-pe
+                label: snet-private-endpoints
+                kind: azure.subnet
+                children:
+                  - { id: pe, label: Private endpoints, icon: az-private-endpoints }
           - id: ai
             label: rg-ai
             kind: azure.resource-group
