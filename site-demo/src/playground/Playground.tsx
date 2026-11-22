@@ -12,6 +12,7 @@ import {
   Copy,
   Download,
   FileCode2,
+  Info,
   Image as ImageIcon,
   Link2,
   RotateCcw,
@@ -26,7 +27,7 @@ import Select, { type SelectOption } from "./Select";
 import YamlEditor, { type YamlEditorHandle } from "./YamlEditor";
 import type { EditorVocab } from "./completions";
 import type { EditorIssue } from "./diagnostics";
-import { EXAMPLES, GROUPS, THEMES, type Example } from "./catalog";
+import { DEFAULT_ID, EXAMPLES, GROUPS, THEMES, type Example } from "./catalog";
 import "./playground.css";
 
 type Core = typeof import("@declarative-diagrams/core/browser");
@@ -121,7 +122,7 @@ const siteMode = (): "light" | "dark" => (document.documentElement.dataset.theme
 export default function Playground() {
   const [core, setCore] = useState<Core | null>(null);
   const [engineError, setEngineError] = useState<string | null>(null);
-  const [id, setId] = useState("hello");
+  const [id, setId] = useState(DEFAULT_ID);
   const ex: Example = EXAMPLES.find((e) => e.id === id) ?? EXAMPLES[0];
   const [yaml, setYaml] = useState(ex.yaml);
   const [theme, setTheme] = useState(ex.theme);
@@ -174,7 +175,7 @@ export default function Playground() {
       setYaml(next);
       return;
     }
-    const draft = readDraft("hello");
+    const draft = readDraft(DEFAULT_ID);
     if (draft) setYaml(draft);
   }, []);
 
@@ -490,12 +491,16 @@ export default function Playground() {
           </div>
 
           {ex.prerendered && (
-            <p className="note">
-              Uses the official {ex.group} icons, which cannot be bundled (licences), so this one is pre-rendered and read-only.{" "}
-              <a href={`${REPO}#icons`} target="_blank" rel="noreferrer">
-                Run it locally
-              </a>{" "}
-              to edit.
+            <p className="note" role="note">
+              <Info size={13} aria-hidden="true" />
+              <span>
+                Read-only. This diagram uses the official {ex.group} icons, whose licence does not allow redistributing them, so it is
+                pre-rendered. To edit it,{" "}
+                <a href={`${REPO}#icons`} target="_blank" rel="noreferrer">
+                  clone the project from GitHub
+                </a>{" "}
+                and add the icons yourself.
+              </span>
             </p>
           )}
 
