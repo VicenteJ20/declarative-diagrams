@@ -28,5 +28,7 @@ for (const id of ENTRIES) {
   if (narrow) writeFileSync(join(out, `${id}.narrow.svg`), await renderSvg(narrow, { embedRuntime: false, theme }));
   // static, light, no script: what the "Download" buttons hand out
   writeFileSync(join(out, `${id}.static.svg`), await renderSvg(spec, { static: true, mode: "light", theme }));
+  // same, dark: carries its own dark background so it is legible anywhere
+  writeFileSync(join(out, `${id}.static.dark.svg`), await renderSvg(spec, { static: true, mode: "dark", theme }));
   console.log(`gallery: ${id}${narrow ? " (+ phone)" : ""}`);
 }

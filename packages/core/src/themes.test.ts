@@ -78,6 +78,14 @@ describe("render with themes", () => {
     expect(s).not.toContain("data-mode=\"auto\"");
   });
 
+  it("a dark static svg carries its own dark background, so light text never lands on white", async () => {
+    const dark = await renderSvg(spec, { theme: "olive", static: true, mode: "dark" });
+    expect(dark).toContain(`<rect class="bg"`);
+    expect(dark).toContain(`fill="${resolveTheme("olive").dark["panel-b"]}"`);
+    expect(await renderSvg(spec, { theme: "olive", static: true, mode: "light" })).not.toContain(`<rect class="bg"`);
+    expect(await renderSvg(spec, { theme: "olive", mode: "dark" })).not.toContain(`<rect class="bg"`);
+  });
+
   it("static svg has literal colours only", async () => {
     const s = await renderSvg(spec, { theme: "olive", static: true });
     expect(s).not.toContain("var(--");
