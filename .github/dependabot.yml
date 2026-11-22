@@ -9,6 +9,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Major versions are not proposed automatically: they are breaking and need a deliberate, manual upgrade
+    # (e.g. zod 4 needs the MCP SDK to support it; TypeScript 7 and tsup 9 need their own migration).
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 
