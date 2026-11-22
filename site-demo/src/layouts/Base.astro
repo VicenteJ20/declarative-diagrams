@@ -1,0 +1,86 @@
+---
+import "../styles/tokens.css";
+import "../styles/base.css";
+import Brand from "../components/Brand";
+import ThemeToggle from "../playground/ThemeToggle";
+
+interface Props {
+  title: string;
+  description?: string;
+  /** App pages (the playground) render their own chrome. */
+  bare?: boolean;
+}
+
+const {
+  title,
+  description = "Declarative, interactive diagrams in the Distill.pub style. Write a little YAML, get an SVG you can embed.",
+  bare = false,
+} = Astro.props;
+const base = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://VicenteJ20.github.io").href;
+const repo = "https://github.com/VicenteJ20/declarative-diagrams";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fcfbf7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15151a" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <script is:inline>
+      // Apply the saved colour theme before the first paint (no flash of the wrong mode).
+      (() => {
+        try {
+          var saved = localStorage.getItem("dgm-theme");
+          if (!saved) {
+            var legacy = localStorage.getItem("dgm-ui");
+            saved = legacy === "light" || legacy === "dark" ? legacy : "system";
+          }
+          if (saved !== "light" && saved !== "dark") saved = "system";
+          var dark = saved === "dark" || (saved === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+          document.documentElement.dataset.themePref = saved;
+        } catch (_) {
+          document.documentElement.dataset.theme = "light";
+          document.documentElement.dataset.themePref = "system";
+        }
+      })();
+    </script>
+  </head>
+  <body class={bare ? "appBody" : "pageBody"}>
+    <a class="skip" href="#main">Skip to content</a>
+    {!bare && (
+      <header class="siteHeader">
+        <Brand href={`${base}/`} />
+        <nav aria-label="Main">
+          <a href={`${base}/guide/`}>Guide</a>
+          <a href={repo} target="_blank" rel="noreferrer">GitHub</a>
+          <ThemeToggle client:load />
+        </nav>
+      </header>
+    )}
+    {bare ? (
+      <slot />
+    ) : (
+      <main id="main">
+        <slot />
+      </main>
+    )}
+    {!bare && (
+      <footer class="siteFooter">
+        Runs entirely in your browser. MIT · <a href={repo} target="_blank" rel="noreferrer">source</a> ·{" "}
+        <a href={`${repo}/blob/main/ICONS-DISCLAIMER.md`} target="_blank" rel="noreferrer">
+          AWS / Azure icons are used with their terms, not affiliated
+        </a>
+      </footer>
+    )}
+  </body>
+</html>

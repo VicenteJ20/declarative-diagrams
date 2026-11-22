@@ -3,7 +3,7 @@ import { DiagramSpec, edgeIds } from "./spec.js";
 import { Layout, LEdge, Pt, layoutSpec, withLook, textW, ENTITY_HEAD, ENTITY_ROW } from "./layout.js";
 import { kindOf } from "./kinds.js";
 import { nodeIcon, IconEmitter, diagramNs, stackIconSize, STACK_GLYPH, STACK_PAD, CARD_ICON, HEAD_ICON } from "./icons/index.js";
-import { css } from "./theme.js";
+import { css, isSafeCssValue } from "./theme.js";
 import { checkConnections } from "./diagnostics.js";
 import { Mode, isMode, getDefaultTheme, resolveTheme, applyPalette, ThemeDef, Palette, ResolvedTheme, FontMode } from "./themes/index.js";
 import { RUNTIME_SOURCE } from "./runtime.js";
@@ -11,7 +11,10 @@ import { RUNTIME_SOURCE } from "./runtime.js";
 export type Look = "default" | "official" | "azure";
 
 export interface RenderOptions {
-  /** Static output: no script, no animation, theme variables resolved (PNG-safe). */
+  /**
+   * Static output: no script, no animation, theme variables resolved (PNG-safe). A dark static SVG carries its own
+   * background (the theme's dark panel colour), so the light text stays legible on any page or viewer.
+   */
   static?: boolean;
   /** `auto` (default: follows the page / OS), `light` or `dark`. Static output treats `auto` as light. */
   mode?: Mode;
@@ -469,6 +472,10 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
   const script =
     !isStatic && opts.embedRuntime !== false ? `<script><![CDATA[${RUNTIME_SOURCE}]]></script>` : "";
 
+  const darkBg = theme.dark["panel-b"];
+  const staticBackground =
+    isStatic && mode === "dark" && darkBg && isSafeCssValue(darkBg) ? `<rect class="bg" width="${W}" height="${H}" fill="${esc(darkBg)}"/>` : "";
+
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="dgm${official ? " look-official" : ""}${azure ? " look-azure" : ""}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="${isStatic ? "img" : "group"}" aria-label="${esc(spec.title ?? "Diagram")}"${themeAttr}${dataSteps}>` +
     `<title>${esc(spec.title ?? "Diagram")}</title>` +
@@ -482,6 +489,7 @@ export function renderLayout(spec: DiagramSpec, layout: Layout, opts: RenderOpti
     `<marker id="dgm-arrow-r" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 1.5L1 5L10 8.5z"/></marker>` +
     `</defs>` +
     `<style>${css(theme, { literal: isStatic, mode: mode === "dark" ? "dark" : "light", font, look })}</style>` +
+    staticBackground +
     `<g transform="translate(${n(dx)} ${n(dy)})">` +
     title +
     `<g transform="translate(${ox} ${oy})">${contSvg}${edgeSvg}${nodeSvg}${notesSvg}</g>` +

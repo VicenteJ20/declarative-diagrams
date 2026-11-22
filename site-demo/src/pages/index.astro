@@ -1,23 +1,26 @@
 ---
+import Base from "../layouts/Base.astro";
 import Playground from "../playground/Playground";
+
 const title = "declarative-diagrams — playground";
-const description = "Write a little YAML, get an interactive diagram: architecture (AWS, Azure), flows and data models. Runs in your browser.";
+const description =
+  "Write a little YAML, get an interactive diagram: architecture (AWS, Azure), flows and data models. Runs in your browser.";
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta name="theme-color" content="#5f6f1f" />
-    <link rel="icon" href={`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#5f6f1f"/><text x="16" y="23" font-size="20" text-anchor="middle" fill="#fff">◈</text></svg>')}`} />
-  </head>
-  <body>
-    <Playground client:only="react">
-      <p slot="fallback" style="font:15px system-ui;padding:3rem;text-align:center;color:#777">Loading the playground…</p>
-    </Playground>
-    <noscript><p style="padding:2rem;font:15px system-ui">The playground needs JavaScript: the diagram engine runs in your browser.</p></noscript>
-  </body>
-</html>
+
+<Base title={title} description={description} bare>
+  <Playground client:only="react">
+    <p slot="fallback" class="loadingPage">Loading the playground…</p>
+  </Playground>
+  <noscript>
+    <p class="loadingPage">The playground needs JavaScript: the diagram engine runs in your browser.</p>
+  </noscript>
+</Base>
+
+<style>
+  .loadingPage {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-muted);
+    font: 15px var(--sans);
+  }
+</style>
