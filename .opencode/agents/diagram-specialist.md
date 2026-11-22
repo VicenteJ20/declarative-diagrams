@@ -174,15 +174,15 @@ and check the numbers: `dgm_render_diagram` prints `Canvas W×H px (A:1)` and a 
 | "vertical" / "horizontal" | `direction: DOWN|RIGHT` |
 | "agrégale pasos / animación" | `steps` and `flow: true` on the main path |
 
-MDX snippet to give (default, for sites using `@dgm/react`; **if the project's `AGENTS.md` defines another component or import path, use that one**):
+MDX snippet to give (default, for sites using `@declarative-diagrams/react`; **if the project's `AGENTS.md` defines another component or import path, use that one**):
 
 ```mdx
-import { Diagram } from "@dgm/react";
+import { Diagram } from "@declarative-diagrams/react";
 import arch, { narrow } from "../diagrams/<name>.diagram.yaml";
 
 <Diagram client:visible svg={arch} narrowSvg={narrow} theme="<theme>" mode="auto" caption="…" />
 ```
-(the `@dgm/react/vite` plugin must be in the site's config; `narrowSvg` only if a `variants.narrow` exists).
+(the `@declarative-diagrams/react/vite` plugin must be in the site's config; `narrowSvg` only if a `variants.narrow` exists).
 
 ## 6. Workflow (always in this order)
 

@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please **do not open a public issue**. Use GitHub's private reporting:
-<https://github.com/VicenteJ20/diagrams-maker/security/advisories/new>.
+<https://github.com/VicenteJ20/declarative-diagrams/security/advisories/new>.
 Include a minimal spec or file that reproduces the problem. You can expect a first reply within a week.
 
 ## Scope

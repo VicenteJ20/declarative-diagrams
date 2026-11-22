@@ -4,6 +4,8 @@
 
 First public release.
 
+- Project name: **declarative-diagrams** (packages `@declarative-diagrams/*`; the CLI is `dgm`, also available as `declarative-diagrams`).
+
 - Declarative YAML → interactive SVG / static PNG / MDX `<Diagram />`; architecture, flow and ER diagrams; Azure and AWS node kinds.
 - Themes (seed colours, light/dark, contrast check), phone variants, steps/reveal order.
 - Icons: bundled Lucide, official Azure/AWS packs imported locally, custom packs.

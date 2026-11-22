@@ -1,15 +1,15 @@
 {
-  "name": "diagrams-maker",
+  "name": "declarative-diagrams",
   "private": true,
   "license": "MIT",
   "author": "Vicente Jorquera",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git"
+    "url": "git+https://github.com/VicenteJ20/declarative-diagrams.git"
   },
-  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "homepage": "https://github.com/VicenteJ20/declarative-diagrams#readme",
   "bugs": {
-    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+    "url": "https://github.com/VicenteJ20/declarative-diagrams/issues"
   },
   "engines": {
     "node": ">=22"
@@ -20,7 +20,7 @@
     "site-demo"
   ],
   "scripts": {
-    "build": "npm run build -w @dgm/core && npm run build -w @dgm/cli && npm run build -w @dgm/react && npm run build -w @dgm/mcp",
+    "build": "npm run build -w @declarative-diagrams/core && npm run build -w @declarative-diagrams/cli && npm run build -w @declarative-diagrams/react && npm run build -w @declarative-diagrams/mcp",
     "test": "vitest run",
     "example": "node packages/cli/dist/index.js render examples/azure-landing-zone.diagram.yaml -o examples/out/azure-landing-zone.svg",
     "demo:dev": "npm run dev -w site-demo",

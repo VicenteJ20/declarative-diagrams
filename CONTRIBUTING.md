@@ -5,7 +5,7 @@ Thanks for helping! Issues and pull requests are welcome.
 ## Setup
 
 ```bash
-git clone https://github.com/VicenteJ20/diagrams-maker && cd diagrams-maker
+git clone https://github.com/VicenteJ20/declarative-diagrams && cd declarative-diagrams
 npm install && npm run build      # Node >= 22; the CLI, MCP server and Vite plugin run from dist/
 npm test                          # vitest; also validates every YAML block in docs and in skills/diagram-author
 npm run demo:dev                  # Astro + MDX demo

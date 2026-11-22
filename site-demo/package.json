@@ -5,11 +5,11 @@
   "author": "Vicente Jorquera",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git"
+    "url": "git+https://github.com/VicenteJ20/declarative-diagrams.git"
   },
-  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "homepage": "https://github.com/VicenteJ20/declarative-diagrams#readme",
   "bugs": {
-    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+    "url": "https://github.com/VicenteJ20/declarative-diagrams/issues"
   },
   "engines": {
     "node": ">=22"
@@ -23,7 +23,7 @@
   "dependencies": {
     "@astrojs/mdx": "^4.0.0",
     "@astrojs/react": "^4.0.0",
-    "@dgm/react": "^0.1.0",
+    "@declarative-diagrams/react": "^0.1.0",
     "astro": "^5.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

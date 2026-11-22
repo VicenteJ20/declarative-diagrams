@@ -1,13 +1,13 @@
 # Third-party notices
 
-diagrams-maker is MIT-licensed (see `LICENSE`). It uses the following third-party software and assets,
+declarative-diagrams is MIT-licensed (see `LICENSE`). It uses the following third-party software and assets,
 each under its own licence.
 
 ## Bundled assets
 
 | Component | Licence | Use |
 |---|---|---|
-| [Lucide](https://lucide.dev) icons (`lucide` npm package) | ISC (some icons derived from Feather, MIT) | The `lu-*` icon pack built into `@dgm/core` |
+| [Lucide](https://lucide.dev) icons (`lucide` npm package) | ISC (some icons derived from Feather, MIT) | The `lu-*` icon pack built into `@declarative-diagrams/core` |
 | Rendered demo images in `docs/img/` | contain Azure / AWS icons, see `ICONS-DISCLAIMER.md` | illustration only; the icon packs themselves are **not** in this repo |
 
 Lucide: Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT);

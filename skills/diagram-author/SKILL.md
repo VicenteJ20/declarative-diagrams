@@ -129,13 +129,13 @@ Full reference: `get_authoring_guide topic=spec`.
 ## Using the result in MDX
 
 ```mdx
-import { Diagram } from "@dgm/react";
+import { Diagram } from "@declarative-diagrams/react";
 import arch, { narrow } from "../diagrams/architecture.diagram.yaml";
 
 <Diagram client:visible svg={arch} narrowSvg={narrow} theme="olive" mode="auto" caption="Figure 1" />
 ```
 
-(`@dgm/react/vite` plugin turns the YAML into the SVG at build time.) A plain exported `.svg` keeps its interactivity only
+(`@declarative-diagrams/react/vite` plugin turns the YAML into the SVG at build time.) A plain exported `.svg` keeps its interactivity only
 when inlined or loaded with `<object>`; with `<img>` it is a still image.
 
 ## When something fails

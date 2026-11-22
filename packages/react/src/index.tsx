@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { attach } from "@dgm/core/runtime";
-import { applyPalette, fontToCssVars, isMode, resolveTheme, themeToCssVars } from "@dgm/core/themes";
-import type { FontMode, Mode, Palette, ThemeDef, ResolvedTheme } from "@dgm/core/themes";
+import { attach } from "@declarative-diagrams/core/runtime";
+import { applyPalette, fontToCssVars, isMode, resolveTheme, themeToCssVars } from "@declarative-diagrams/core/themes";
+import type { FontMode, Mode, Palette, ThemeDef, ResolvedTheme } from "@declarative-diagrams/core/themes";
 
 export interface DiagramProps {
   /** SVG string produced by the Vite plugin (`import svg from "./x.diagram.yaml"`) or `renderSvg()`. */

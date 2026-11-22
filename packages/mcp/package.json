@@ -1,16 +1,16 @@
 {
-  "name": "@dgm/mcp",
+  "name": "@declarative-diagrams/mcp",
   "version": "0.1.0",
   "license": "MIT",
   "author": "Vicente Jorquera",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git",
+    "url": "git+https://github.com/VicenteJ20/declarative-diagrams.git",
     "directory": "packages/mcp"
   },
-  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "homepage": "https://github.com/VicenteJ20/declarative-diagrams#readme",
   "bugs": {
-    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+    "url": "https://github.com/VicenteJ20/declarative-diagrams/issues"
   },
   "engines": {
     "node": ">=22"
@@ -24,7 +24,7 @@
     "build": "tsup src/index.ts src/server.ts --format esm --clean"
   },
   "dependencies": {
-    "@dgm/core": "^0.1.0",
+    "@declarative-diagrams/core": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "yaml": "^2.6.0",
     "zod": "^3.23.8"

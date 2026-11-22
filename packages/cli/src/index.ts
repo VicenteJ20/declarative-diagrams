@@ -36,7 +36,7 @@ import {
   type Mode,
   type ThemeDef,
   type DiagramSpec,
-} from "@dgm/core";
+} from "@declarative-diagrams/core";
 
 const here = dirname(fileURLToPath(import.meta.url));
 

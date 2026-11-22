@@ -1,29 +1,30 @@
 {
-  "name": "@dgm/cli",
+  "name": "@declarative-diagrams/cli",
   "version": "0.1.0",
   "license": "MIT",
   "author": "Vicente Jorquera",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git",
+    "url": "git+https://github.com/VicenteJ20/declarative-diagrams.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "homepage": "https://github.com/VicenteJ20/declarative-diagrams#readme",
   "bugs": {
-    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+    "url": "https://github.com/VicenteJ20/declarative-diagrams/issues"
   },
   "engines": {
     "node": ">=22"
   },
   "type": "module",
   "bin": {
-    "dgm": "dist/index.js"
+    "dgm": "dist/index.js",
+    "declarative-diagrams": "dist/index.js"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean"
   },
   "dependencies": {
-    "@dgm/core": "^0.1.0",
+    "@declarative-diagrams/core": "^0.1.0",
     "yaml": "^2.6.0"
   },
   "files": [

@@ -29,7 +29,7 @@ import {
   type DiagramSpec,
   type Mode,
   type ThemeDef,
-} from "@dgm/core";
+} from "@declarative-diagrams/core";
 
 const here = dirname(fileURLToPath(import.meta.url));
 

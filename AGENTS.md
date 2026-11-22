@@ -1,4 +1,4 @@
-# diagrams-maker — agent notes
+# declarative-diagrams — agent notes
 
 Declarative, interactive diagrams in the Distill.pub style (YAML → interactive SVG / static PNG / MDX `<Diagram />`).
 Monorepo (npm workspaces, TypeScript, ESM): `packages/core` (spec, layout, render, themes, icons), `cli`, `react`, `mcp`,

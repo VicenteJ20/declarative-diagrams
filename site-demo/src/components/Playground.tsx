@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Diagram } from "@dgm/react";
-import type { FontMode, Mode, ThemeDef } from "@dgm/core/themes";
+import { Diagram } from "@declarative-diagrams/react";
+import type { FontMode, Mode, ThemeDef } from "@declarative-diagrams/core/themes";
 
 const NAMES = ["distill", "olive", "azure", "aws", "orange", "slate", "mono"];
 

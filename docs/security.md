@@ -1,6 +1,6 @@
 # Security model
 
-diagrams-maker turns text (YAML/JSON specs, theme files, SVG icons) into SVG/PNG, and exposes file-writing tools to AI agents.
+declarative-diagrams turns text (YAML/JSON specs, theme files, SVG icons) into SVG/PNG, and exposes file-writing tools to AI agents.
 Treat specs coming from an AI or a stranger as **untrusted input**.
 
 ## What is guarded

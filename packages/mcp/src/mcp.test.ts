@@ -5,7 +5,7 @@ import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { parseSpecText, validateSpec, loadConfig, parseThemeDef, resolveTheme, checkTheme } from "@dgm/core";
+import { parseSpecText, validateSpec, loadConfig, parseThemeDef, resolveTheme, checkTheme } from "@declarative-diagrams/core";
 import { createServer } from "./server.js";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");

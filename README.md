@@ -1,4 +1,4 @@
-# diagrams-maker
+# declarative-diagrams
 
 **Declarative, interactive diagrams in the [Distill.pub](https://distill.pub) style.** Write a small YAML file and get an
 **interactive SVG** (hover/click highlighting, animated flow, step-by-step reveal, tooltips), a **static PNG**, or a
@@ -13,7 +13,7 @@ subnets, resources and their interactions), flowcharts and ER models — and ful
 
 ## Agents + Skill + MCP — the best way to use it
 
-diagrams-maker ships everything an AI assistant needs to draw diagrams **well**, not just quickly:
+declarative-diagrams ships everything an AI assistant needs to draw diagrams **well**, not just quickly:
 
 | Piece | What it gives the assistant |
 |---|---|
@@ -64,22 +64,22 @@ Everything else is the same text format: [`examples/`](examples) has ready-to-co
 
 ```mdx
 import arch from "./arch.diagram.yaml";
-import { Diagram } from "@dgm/react";
+import { Diagram } from "@declarative-diagrams/react";
 
 <Diagram client:visible svg={arch} caption="Figure 1. Architecture." />
 ```
 
-`@dgm/react` includes a Vite plugin that turns `*.diagram.yaml` imports into specs. A complete Astro + MDX example lives in
+`@declarative-diagrams/react` includes a Vite plugin that turns `*.diagram.yaml` imports into specs. A complete Astro + MDX example lives in
 [`site-demo/`](site-demo) (`npm run demo:dev`).
 
 ## Packages
 
 | Package | What |
 |---|---|
-| `@dgm/core` | spec, ELK layout, SVG renderer, themes, icons, PNG export |
-| `@dgm/cli` | `dgm render / validate / schema / kinds / theme / icons / skill / agent / mcp` |
-| `@dgm/react` | `<Diagram />` for MDX + Vite plugin |
-| `@dgm/mcp` | MCP server for AI agents |
+| `@declarative-diagrams/core` | spec, ELK layout, SVG renderer, themes, icons, PNG export |
+| `@declarative-diagrams/cli` | `dgm` (alias `declarative-diagrams`): `render / validate / schema / kinds / theme / icons / skill / agent / mcp` |
+| `@declarative-diagrams/react` | `<Diagram />` for MDX + Vite plugin |
+| `@declarative-diagrams/mcp` | MCP server for AI agents |
 | `skills/diagram-author` | Skill: workflow, patterns, style guide |
 
 > **Not on npm yet.** For now, clone the repo and run `npm install && npm run build` (Node ≥ 22).

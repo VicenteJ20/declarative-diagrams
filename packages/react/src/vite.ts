@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import YAML from "yaml";
-import { parseSpecText, validateSpec, applyVariant, renderSvg, loadConfig, parseThemeDef, type Mode, type FontMode, type ThemeDef, type Palette } from "@dgm/core";
+import { parseSpecText, validateSpec, applyVariant, renderSvg, loadConfig, parseThemeDef, type Mode, type FontMode, type ThemeDef, type Palette } from "@declarative-diagrams/core";
 
 export interface DgmPluginOptions {
   /** Default theme baked into every diagram (name or definition). A spec's own `theme:` is overridden by this. */

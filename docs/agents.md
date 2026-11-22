@@ -1,6 +1,6 @@
-# Using diagrams-maker with an AI agent (Agents + Skill + MCP)
+# Using declarative-diagrams with an AI agent (Agents + Skill + MCP)
 
-Three pieces work together (you can also use diagrams-maker [without any AI](../README.md#no-ai-its-declarative--use-it-by-hand)):
+Three pieces work together (you can also use declarative-diagrams [without any AI](../README.md#no-ai-its-declarative--use-it-by-hand)):
 
 - **MCP server `dgm`** (`packages/mcp`) — the tools: read the guide, search icons, validate, **render a PNG the agent can look at**,
   save specs, create/preview themes.
@@ -20,7 +20,7 @@ node packages/cli/dist/index.js mcp config         # prints the config + the `cl
 This repo ships a project-scoped [`.mcp.json`](../.mcp.json); Claude Code asks you to approve it the first time. In another project:
 
 ```bash
-claude mcp add dgm -- node /path/to/diagrams-maker/packages/mcp/dist/index.js --root /path/to/your/project
+claude mcp add dgm -- node /path/to/declarative-diagrams/packages/mcp/dist/index.js --root /path/to/your/project
 ```
 
 `--root` is the project the agent works in: `dgm.config.json`, `themes/`, your `*.diagram.yaml` and `.dgm/icons` are read from
@@ -56,8 +56,8 @@ at the icon store so the Azure/AWS icons you imported are found from any project
 "mcp": {
   "dgm": {
     "type": "local",
-    "command": ["node", "/path/to/diagrams-maker/packages/mcp/dist/index.js"],
-    "environment": { "DGM_ICONS_DIR": "/path/to/diagrams-maker/.dgm/icons" },
+    "command": ["node", "/path/to/declarative-diagrams/packages/mcp/dist/index.js"],
+    "environment": { "DGM_ICONS_DIR": "/path/to/declarative-diagrams/.dgm/icons" },
     "enabled": true
   }
 }

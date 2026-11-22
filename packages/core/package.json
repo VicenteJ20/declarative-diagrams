@@ -1,16 +1,16 @@
 {
-  "name": "@dgm/core",
+  "name": "@declarative-diagrams/core",
   "version": "0.1.0",
   "license": "MIT",
   "author": "Vicente Jorquera",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/VicenteJ20/diagrams-maker.git",
+    "url": "git+https://github.com/VicenteJ20/declarative-diagrams.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/VicenteJ20/diagrams-maker#readme",
+  "homepage": "https://github.com/VicenteJ20/declarative-diagrams#readme",
   "bugs": {
-    "url": "https://github.com/VicenteJ20/diagrams-maker/issues"
+    "url": "https://github.com/VicenteJ20/declarative-diagrams/issues"
   },
   "engines": {
     "node": ">=22"
